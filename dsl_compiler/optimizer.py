@@ -1,6 +1,6 @@
 """
-DSL 编译器优化器
-长文本摘要、常量折叠、无用节点剔除
+DSL Compiler Optimizer
+Long text summarization, constant folding, dead node elimination
 """
 
 from typing import List, Dict, Set, Any, Optional
@@ -11,7 +11,7 @@ from .exceptions import CompilerError
 
 
 class Optimizer:
-    """优化器"""
+    """Optimizer"""
     
     def __init__(self, config: CompilerConfig):
         self.config = config
@@ -27,36 +27,36 @@ class Optimizer:
     
     def optimize(self, ast_root: ASTNode, context: ParseContext) -> ASTNode:
         """
-        优化 AST
+        Optimize AST
         
         Args:
-            ast_root: 根 AST 节点
-            context: 解析上下文
+            ast_root: Root AST node
+            context: Parse context
             
         Returns:
-            ASTNode: 优化后的 AST
+            ASTNode: Optimized AST
         """
         self.optimizations_applied = []
         self.removed_nodes = []
         self.statistics["nodes_before"] = self._count_nodes(ast_root)
         
         try:
-            # 1. 死代码消除
+            # 1. Dead code elimination
             ast_root = self._eliminate_dead_code(ast_root, context)
             
-            # 2. 常量折叠
+            # 2. Constant folding
             ast_root = self._fold_constants(ast_root, context)
             
-            # 3. 文本压缩
+            # 3. Text compression
             ast_root = self._compress_text(ast_root, context)
             
-            # 4. 节点合并
+            # 4. Node merging
             ast_root = self._merge_nodes(ast_root, context)
             
-            # 5. 重复消除
+            # 5. Duplicate elimination
             ast_root = self._eliminate_duplicates(ast_root, context)
             
-            # 6. 结构优化
+            # 6. Structure optimization
             ast_root = self._optimize_structure(ast_root, context)
             
             self.statistics["nodes_after"] = self._count_nodes(ast_root)
@@ -64,41 +64,41 @@ class Optimizer:
             return ast_root
             
         except Exception as e:
-            raise CompilerError(f"优化过程发生错误: {str(e)}")
+            raise CompilerError(f"Error occurred during optimization: {str(e)}")
     
     def _eliminate_dead_code(self, ast_root: ASTNode, context: ParseContext) -> ASTNode:
-        """消除死代码"""
-        # 标记可达节点
+        """Eliminate dead code"""
+        # Mark reachable nodes
         reachable = set()
         self._mark_reachable(ast_root, reachable)
         
-        # 移除不可达节点
+        # Remove unreachable nodes
         optimized_root = self._remove_unreachable(ast_root, reachable)
         
         if len(self.removed_nodes) > 0:
-            self.optimizations_applied.append(f"死代码消除: 移除 {len(self.removed_nodes)} 个节点")
+            self.optimizations_applied.append(f"Dead code elimination: removed {len(self.removed_nodes)} nodes")
             self.statistics["dead_code_removed"] = len(self.removed_nodes)
         
         return optimized_root or ast_root
     
     def _fold_constants(self, ast_root: ASTNode, context: ParseContext) -> ASTNode:
-        """常量折叠"""
+        """Constant folding"""
         folded_count = 0
         
-        # 递归处理所有节点
+        # Recursively process all nodes
         folded_count += self._fold_node_constants(ast_root, context)
         
         if folded_count > 0:
-            self.optimizations_applied.append(f"常量折叠: 折叠 {folded_count} 个常量")
+            self.optimizations_applied.append(f"Constant folding: folded {folded_count} constants")
             self.statistics["constants_folded"] = folded_count
         
         return ast_root
     
     def _compress_text(self, ast_root: ASTNode, context: ParseContext) -> ASTNode:
-        """压缩文本"""
+        """Compress text"""
         compressed_count = 0
         
-        # 处理所有文本节点
+        # Process all text nodes
         text_nodes = self._find_nodes_by_type(ast_root, "text")
         
         for text_node in text_nodes:
@@ -106,71 +106,71 @@ class Optimizer:
                 compressed_count += 1
         
         if compressed_count > 0:
-            self.optimizations_applied.append(f"文本压缩: 压缩 {compressed_count} 个文本节点")
+            self.optimizations_applied.append(f"Text compression: compressed {compressed_count} text nodes")
             self.statistics["text_compressed"] = compressed_count
         
         return ast_root
     
     def _merge_nodes(self, ast_root: ASTNode, context: ParseContext) -> ASTNode:
-        """合并节点"""
+        """Merge nodes"""
         merged_count = 0
         
-        # 合并相邻的文本节点
+        # Merge adjacent text nodes
         merged_count += self._merge_text_nodes(ast_root)
         
-        # 合并相似的任务节点
+        # Merge similar task nodes
         merged_count += self._merge_similar_tasks(ast_root)
         
         if merged_count > 0:
-            self.optimizations_applied.append(f"节点合并: 合并 {merged_count} 个节点")
+            self.optimizations_applied.append(f"Node merging: merged {merged_count} nodes")
         
         return ast_root
     
     def _eliminate_duplicates(self, ast_root: ASTNode, context: ParseContext) -> ASTNode:
-        """消除重复"""
-        # 查找重复的变量定义
+        """Eliminate duplicates"""
+        # Find duplicate variable definitions
         self._remove_duplicate_variables(ast_root)
         
-        # 查找重复的工具定义
+        # Find duplicate tool definitions
         self._remove_duplicate_tools(ast_root)
         
         return ast_root
     
     def _optimize_structure(self, ast_root: ASTNode, context: ParseContext) -> ASTNode:
-        """优化结构"""
-        # 扁平化嵌套结构
+        """Optimize structure"""
+        # Flatten nested structures
         self._flatten_nested_structures(ast_root)
         
-        # 重新排序节点
+        # Reorder nodes
         self._reorder_nodes(ast_root)
         
         return ast_root
     
     def _mark_reachable(self, node: ASTNode, reachable: Set[ASTNode]) -> None:
-        """标记可达节点"""
+        """Mark reachable nodes"""
         if node in reachable:
             return
         
         reachable.add(node)
         
-        # 特殊处理：任务节点的引用
+        # Special handling: references from task nodes
         if node.node_type == "task":
-            # 查找任务引用的其他节点
+            # Find nodes referenced by the task
             referenced_nodes = self._find_referenced_nodes(node)
             for ref_node in referenced_nodes:
                 self._mark_reachable(ref_node, reachable)
         
-        # 递归处理子节点
+        # Recursively process child nodes
         for child in node.children:
             self._mark_reachable(child, reachable)
     
     def _remove_unreachable(self, node: ASTNode, reachable: Set[ASTNode]) -> Optional[ASTNode]:
-        """移除不可达节点"""
+        """Remove unreachable nodes"""
         if node not in reachable:
             self.removed_nodes.append(node)
             return None
         
-        # 递归处理子节点
+        # Recursively process child nodes
         new_children = []
         for child in node.children:
             optimized_child = self._remove_unreachable(child, reachable)
@@ -181,20 +181,20 @@ class Optimizer:
         return node
     
     def _fold_node_constants(self, node: ASTNode, context: ParseContext) -> int:
-        """折叠节点中的常量"""
+        """Fold constants in node"""
         folded_count = 0
         
-        # 处理变量节点
+        # Process variable nodes
         if node.node_type == "var":
             var_value = node.get_attribute("value")
             if var_value and isinstance(var_value, str):
-                # 尝试计算常量表达式
+                # Try to evaluate constant expressions
                 folded_value = self._evaluate_constant_expression(var_value)
                 if folded_value != var_value:
                     node.set_attribute("value", folded_value)
                     folded_count += 1
         
-        # 处理文本节点中的常量引用
+        # Process constant references in text nodes
         elif node.node_type == "text":
             content = node.get_attribute("content", "")
             if content:
@@ -203,28 +203,28 @@ class Optimizer:
                     node.set_attribute("content", folded_content)
                     folded_count += 1
         
-        # 递归处理子节点
+        # Recursively process child nodes
         for child in node.children:
             folded_count += self._fold_node_constants(child, context)
         
         return folded_count
     
     def _compress_text_node(self, text_node: ASTNode) -> bool:
-        """压缩文本节点"""
+        """Compress text node"""
         content = text_node.get_attribute("content", "")
         
-        if not content or len(content) < 100:  # 只压缩较长的文本
+        if not content or len(content) < 100:  # Only compress longer text
             return False
         
-        # 移除多余的空白
+        # Remove excess whitespace
         import re
         compressed = re.sub(r'\s+', ' ', content.strip())
         
-        # 移除重复的标点
+        # Remove repeated punctuation
         compressed = re.sub(r'[。！？]{2,}', '。', compressed)
         compressed = re.sub(r'[.,!?]{2,}', '.', compressed)
         
-        # 简化重复的词语
+        # Simplify repeated words
         compressed = re.sub(r'\b(\w+)\s+\1\b', r'\1', compressed)
         
         if len(compressed) < len(content):
@@ -236,7 +236,7 @@ class Optimizer:
         return False
     
     def _merge_text_nodes(self, node: ASTNode) -> int:
-        """合并相邻的文本节点"""
+        """Merge adjacent text nodes"""
         merged_count = 0
         
         if not node.children:
@@ -248,17 +248,17 @@ class Optimizer:
         while i < len(node.children):
             current = node.children[i]
             
-            # 如果当前节点是文本节点，查找相邻的文本节点
+            # If current node is text node, look for adjacent text nodes
             if current.node_type == "text":
                 text_content = [current.get_attribute("content", "")]
                 j = i + 1
                 
-                # 查找连续的文本节点
+                # Find consecutive text nodes
                 while j < len(node.children) and node.children[j].node_type == "text":
                     text_content.append(node.children[j].get_attribute("content", ""))
                     j += 1
                 
-                # 如果找到多个连续的文本节点，合并它们
+                # If multiple consecutive text nodes found, merge them
                 if j > i + 1:
                     merged_content = " ".join(text_content)
                     current.set_attribute("content", merged_content)
@@ -274,24 +274,24 @@ class Optimizer:
         
         node.children = new_children
         
-        # 递归处理子节点
+        # Recursively process child nodes
         for child in node.children:
             merged_count += self._merge_text_nodes(child)
         
         return merged_count
     
     def _merge_similar_tasks(self, ast_root: ASTNode) -> int:
-        """合并相似的任务"""
+        """Merge similar tasks"""
         merged_count = 0
         
         task_nodes = self._find_nodes_by_type(ast_root, "task")
         
-        # 按相似性分组
+        # Group by similarity
         groups = self._group_similar_tasks(task_nodes)
         
         for group in groups:
             if len(group) > 1:
-                # 合并组内的任务
+                # Merge tasks in group
                 merged_task = self._merge_task_group(group)
                 if merged_task:
                     merged_count += len(group) - 1
@@ -299,7 +299,7 @@ class Optimizer:
         return merged_count
     
     def _remove_duplicate_variables(self, ast_root: ASTNode) -> None:
-        """移除重复的变量定义"""
+        """Remove duplicate variable definitions"""
         var_nodes = self._find_nodes_by_type(ast_root, "var")
         seen_vars = {}
         
@@ -310,13 +310,13 @@ class Optimizer:
             if var_name:
                 key = (var_name, str(var_value))
                 if key in seen_vars:
-                    # 移除重复的变量
+                    # Remove duplicate variable
                     self._remove_node(var_node)
                 else:
                     seen_vars[key] = var_node
     
     def _remove_duplicate_tools(self, ast_root: ASTNode) -> None:
-        """移除重复的工具定义"""
+        """Remove duplicate tool definitions"""
         tool_nodes = self._find_nodes_by_type(ast_root, "tool")
         seen_tools = {}
         
@@ -327,36 +327,36 @@ class Optimizer:
             if tool_name:
                 key = (tool_name, tool_desc)
                 if key in seen_tools:
-                    # 移除重复的工具
+                    # Remove duplicate tool
                     self._remove_node(tool_node)
                 else:
                     seen_tools[key] = tool_node
     
     def _flatten_nested_structures(self, node: ASTNode) -> None:
-        """扁平化嵌套结构"""
-        # 扁平化单子节点的嵌套
+        """Flatten nested structures"""
+        # Flatten single-child nesting
         if len(node.children) == 1 and node.children[0].node_type == node.node_type:
             child = node.children[0]
             node.children = child.children
             node.attributes.update(child.attributes)
         
-        # 递归处理子节点
+        # Recursively process child nodes
         for child in node.children:
             self._flatten_nested_structures(child)
     
     def _reorder_nodes(self, node: ASTNode) -> None:
-        """重新排序节点"""
-        # 按类型排序：变量 -> 工具 -> 任务
+        """Reorder nodes"""
+        # Sort by type: variables -> tools -> tasks
         type_order = {"var": 0, "tool": 1, "task": 2, "text": 3}
         
         node.children.sort(key=lambda child: type_order.get(child.node_type, 99))
         
-        # 递归处理子节点
+        # Recursively process child nodes
         for child in node.children:
             self._reorder_nodes(child)
     
     def _find_nodes_by_type(self, node: ASTNode, node_type: str) -> List[ASTNode]:
-        """查找指定类型的节点"""
+        """Find nodes of specified type"""
         nodes = []
         
         if node.node_type == node_type:
@@ -368,26 +368,26 @@ class Optimizer:
         return nodes
     
     def _find_referenced_nodes(self, task_node: ASTNode) -> List[ASTNode]:
-        """查找任务引用的其他节点"""
+        """Find nodes referenced by task"""
         referenced = []
         
-        # 从任务内容中提取引用
+        # Extract references from task content
         for child in task_node.children:
             if child.node_type == "text":
                 content = child.get_attribute("content", "")
-                # 查找引用模式
+                # Find reference patterns
                 import re
                 refs = re.findall(r'[@$]\{([a-zA-Z_][a-zA-Z0-9_]*)\}', content)
-                # 这里需要根据实际的符号表来解析引用
-                # 暂时简化处理
+                # This needs to be resolved based on actual symbol table
+                # Temporarily simplified
         
         return referenced
     
     def _evaluate_constant_expression(self, expression: str) -> str:
-        """计算常量表达式"""
-        # 简单的常量表达式计算
+        """Evaluate constant expression"""
+        # Simple constant expression evaluation
         try:
-            # 只允许简单的数学运算
+            # Only allow simple math operations
             import re
             if re.match(r'^[\d\+\-\*\/\.\(\)\s]+$', expression):
                 result = eval(expression)
@@ -398,30 +398,30 @@ class Optimizer:
         return expression
     
     def _fold_text_constants(self, content: str, context: ParseContext) -> str:
-        """折叠文本中的常量"""
-        # 查找并替换常量引用
+        """Fold constants in text"""
+        # Find and replace constant references
         import re
         
         def replace_constant(match):
             var_name = match.group(1)
-            # 从上下文中查找变量值
+            # Look up variable value from context
             if hasattr(context, 'variables') and var_name in context.variables:
                 return str(context.variables[var_name])
             return match.group(0)
         
-        # 替换 ${variable} 形式的常量引用
+        # Replace ${variable} form constant references
         folded = re.sub(r'\$\{([a-zA-Z_][a-zA-Z0-9_]*)\}', replace_constant, content)
         
         return folded
     
     def _group_similar_tasks(self, task_nodes: List[ASTNode]) -> List[List[ASTNode]]:
-        """将相似的任务分组"""
+        """Group similar tasks"""
         groups = []
         
         for task_node in task_nodes:
             task_content = self._get_task_content(task_node)
             
-            # 查找相似的组
+            # Find similar group
             found_group = None
             for group in groups:
                 if self._is_similar_task(task_node, group[0]):
@@ -436,20 +436,20 @@ class Optimizer:
         return groups
     
     def _is_similar_task(self, task1: ASTNode, task2: ASTNode) -> bool:
-        """判断两个任务是否相似"""
+        """Determine if two tasks are similar"""
         content1 = self._get_task_content(task1)
         content2 = self._get_task_content(task2)
         
-        # 简单的相似性判断
+        # Simple similarity judgment
         if not content1 or not content2:
             return False
         
-        # 计算文本相似度
+        # Calculate text similarity
         similarity = self._calculate_text_similarity(content1, content2)
         return similarity > 0.8
     
     def _get_task_content(self, task_node: ASTNode) -> str:
-        """获取任务内容"""
+        """Get task content"""
         content_parts = []
         
         for child in task_node.children:
@@ -461,8 +461,8 @@ class Optimizer:
         return " ".join(content_parts)
     
     def _calculate_text_similarity(self, text1: str, text2: str) -> float:
-        """计算文本相似度"""
-        # 简单的基于词汇的相似度计算
+        """Calculate text similarity"""
+        # Simple vocabulary-based similarity calculation
         words1 = set(text1.lower().split())
         words2 = set(text2.lower().split())
         
@@ -475,39 +475,39 @@ class Optimizer:
         return len(intersection) / len(union)
     
     def _merge_task_group(self, task_group: List[ASTNode]) -> Optional[ASTNode]:
-        """合并任务组"""
+        """Merge task group"""
         if not task_group:
             return None
         
-        # 使用第一个任务作为基础
+        # Use first task as base
         base_task = task_group[0]
         
-        # 合并其他任务的内容
+        # Merge content from other tasks
         for task in task_group[1:]:
             for child in task.children:
                 if child.node_type == "text":
                     base_task.add_child(child)
             
-            # 移除被合并的任务
+            # Remove merged task
             self._remove_node(task)
         
         return base_task
     
     def _remove_node(self, node: ASTNode) -> None:
-        """移除节点"""
+        """Remove node"""
         if node.parent:
             node.parent.children.remove(node)
         self.removed_nodes.append(node)
     
     def _count_nodes(self, node: ASTNode) -> int:
-        """计算节点数量"""
+        """Count number of nodes"""
         count = 1
         for child in node.children:
             count += self._count_nodes(child)
         return count
     
     def get_optimization_report(self) -> Dict[str, Any]:
-        """获取优化报告"""
+        """Get optimization report"""
         return {
             "optimizations_applied": self.optimizations_applied,
             "statistics": self.statistics,

@@ -1,6 +1,6 @@
 """
-DSL 编译器验证器
-DAG 检测、类型检查、变量作用域、冲突检查
+DSL Compiler Validator
+DAG detection, type checking, variable scope, conflict checking
 """
 
 from typing import List, Dict, Set, Any, Optional
@@ -11,7 +11,7 @@ from .exceptions import ValidationError, CompilerError
 
 
 class Validator:
-    """验证器"""
+    """Validator"""
     
     def __init__(self, config: CompilerConfig):
         self.config = config
@@ -20,50 +20,50 @@ class Validator:
     
     def validate(self, ast_root: ASTNode, context: ParseContext) -> List[ValidationError]:
         """
-        验证 AST
+        Validate AST
         
         Args:
-            ast_root: 根 AST 节点
-            context: 解析上下文
+            ast_root: Root AST node
+            context: Parse context
             
         Returns:
-            List[ValidationError]: 验证错误列表
+            List[ValidationError]: Validation error list
         """
         self.errors = []
         self.warnings = []
         
         try:
-            # 1. DAG 检测
+            # 1. DAG detection
             self._validate_dag(ast_root, context)
             
-            # 2. 类型检查
+            # 2. Type checking
             self._validate_types(ast_root, context)
             
-            # 3. 变量作用域检查
+            # 3. Variable scope checking
             self._validate_scopes(ast_root, context)
             
-            # 4. 冲突检查
+            # 4. Conflict checking
             self._validate_conflicts(ast_root, context)
             
-            # 5. 引用检查
+            # 5. Reference checking
             self._validate_references(ast_root, context)
             
-            # 6. 语义一致性检查
+            # 6. Semantic consistency checking
             self._validate_consistency(ast_root, context)
             
             return self.errors
             
         except Exception as e:
-            error = ValidationError(f"验证过程发生错误: {str(e)}")
+            error = ValidationError(f"Error occurred during validation: {str(e)}")
             self.errors.append(error)
             return self.errors
     
     def _validate_dag(self, ast_root: ASTNode, context: ParseContext) -> None:
-        """验证 DAG 结构"""
-        # 收集所有任务节点
+        """Validate DAG structure"""
+        # Collect all task nodes
         task_nodes = self._find_nodes_by_type(ast_root, "task")
         
-        # 构建任务图
+        # Build task graph
         task_graph: Dict[str, List[str]] = {}
         task_map: Dict[str, ASTNode] = {}
         
@@ -73,73 +73,73 @@ class Validator:
                 task_map[task_id] = task_node
                 task_graph[task_id] = []
         
-        # 分析任务依赖关系
+        # Analyze task dependency relationships
         for task_node in task_nodes:
             task_id = task_node.get_attribute("id")
             if task_id:
-                # 查找 next 关系
+                # Find next relationships
                 next_tasks = self._extract_next_tasks(task_node)
                 task_graph[task_id].extend(next_tasks)
         
-        # 检查循环依赖
+        # Check circular dependencies
         self._detect_cycles(task_graph, task_map)
         
-        # 检查孤立节点
+        # Check isolated nodes
         self._detect_isolated_nodes(task_graph, task_map)
     
     def _validate_types(self, ast_root: ASTNode, context: ParseContext) -> None:
-        """验证类型"""
-        # 验证变量类型
+        """Validate types"""
+        # Validate variable types
         var_nodes = self._find_nodes_by_type(ast_root, "var")
         for var_node in var_nodes:
             self._validate_variable_type(var_node, context)
         
-        # 验证任务类型
+        # Validate task types
         task_nodes = self._find_nodes_by_type(ast_root, "task")
         for task_node in task_nodes:
             self._validate_task_type(task_node, context)
         
-        # 验证工具类型
+        # Validate tool types
         tool_nodes = self._find_nodes_by_type(ast_root, "tool")
         for tool_node in tool_nodes:
             self._validate_tool_type(tool_node, context)
     
     def _validate_scopes(self, ast_root: ASTNode, context: ParseContext) -> None:
-        """验证作用域"""
-        # 构建作用域树
-        scope_stack = [{}]  # 全局作用域
+        """Validate scopes"""
+        # Build scope tree
+        scope_stack = [{}]  # Global scope
         
         self._validate_node_scope(ast_root, scope_stack, context)
     
     def _validate_conflicts(self, ast_root: ASTNode, context: ParseContext) -> None:
-        """验证冲突"""
-        # 检查 ID 冲突
+        """Validate conflicts"""
+        # Check ID conflicts
         self._check_id_conflicts(ast_root, context)
         
-        # 检查名称冲突
+        # Check name conflicts
         self._check_name_conflicts(ast_root, context)
         
-        # 检查资源冲突
+        # Check resource conflicts
         self._check_resource_conflicts(ast_root, context)
     
     def _validate_references(self, ast_root: ASTNode, context: ParseContext) -> None:
-        """验证引用"""
-        # 收集所有符号
+        """Validate references"""
+        # Collect all symbols
         symbols = self._collect_symbols(ast_root)
         
-        # 检查引用
+        # Check references
         self._check_references(ast_root, symbols, context)
     
     def _validate_consistency(self, ast_root: ASTNode, context: ParseContext) -> None:
-        """验证语义一致性"""
-        # 检查任务流一致性
+        """Validate semantic consistency"""
+        # Check task flow consistency
         self._check_task_flow_consistency(ast_root, context)
         
-        # 检查工具参数一致性
+        # Check tool parameter consistency
         self._check_tool_parameter_consistency(ast_root, context)
     
     def _find_nodes_by_type(self, node: ASTNode, node_type: str) -> List[ASTNode]:
-        """查找指定类型的节点"""
+        """Find nodes of specified type"""
         nodes = []
         
         if node.node_type == node_type:
@@ -151,14 +151,14 @@ class Validator:
         return nodes
     
     def _extract_next_tasks(self, task_node: ASTNode) -> List[str]:
-        """提取任务的下一步任务"""
+        """Extract next tasks from task"""
         next_tasks = []
         
-        # 从任务内容中提取引用
+        # Extract references from task content
         for child in task_node.children:
             if child.node_type == "text":
                 content = child.get_attribute("content", "")
-                # 简单的引用提取
+                # Simple reference extraction
                 import re
                 matches = re.findall(r'@\{([a-zA-Z_][a-zA-Z0-9_]*)\}', content)
                 next_tasks.extend(matches)
@@ -166,7 +166,7 @@ class Validator:
         return next_tasks
     
     def _detect_cycles(self, graph: Dict[str, List[str]], task_map: Dict[str, ASTNode]) -> None:
-        """检测循环依赖"""
+        """Detect circular dependencies"""
         visited = set()
         rec_stack = set()
         
@@ -181,14 +181,14 @@ class Validator:
             
             for neighbor in graph.get(node, []):
                 if neighbor in graph and dfs(neighbor):
-                    # 找到循环
+                    # Found cycle
                     task_node = task_map.get(node)
                     if task_node:
                         self.errors.append(ValidationError(
-                            f"检测到循环依赖: {node} -> {neighbor}",
+                            f"Circular dependency detected: {node} -> {neighbor}",
                             rule="no_cycles",
                             line=task_node.line,
-                            suggestions=["检查任务流程，移除循环引用"]
+                            suggestions=["Check task flow, remove circular references"]
                         ))
                     return True
             
@@ -200,190 +200,190 @@ class Validator:
                 dfs(node)
     
     def _detect_isolated_nodes(self, graph: Dict[str, List[str]], task_map: Dict[str, ASTNode]) -> None:
-        """检测孤立节点"""
-        # 找到所有被引用的节点
+        """Detect isolated nodes"""
+        # Find all referenced nodes
         referenced = set()
         for node, neighbors in graph.items():
             referenced.update(neighbors)
         
-        # 检查是否有节点既不是入口也不被引用
+        # Check if any node is neither entry nor referenced
         for node in graph:
             if node not in referenced and not graph[node]:
                 task_node = task_map.get(node)
                 if task_node:
-                    self.warnings.append(f"任务 '{node}' 可能是孤立节点")
+                    self.warnings.append(f"Task '{node}' may be an isolated node")
     
     def _validate_variable_type(self, var_node: ASTNode, context: ParseContext) -> None:
-        """验证变量类型"""
+        """Validate variable type"""
         var_name = var_node.get_attribute("name")
         var_value = var_node.get_attribute("value")
         inferred_type = var_node.get_attribute("inferred_type")
         
         if not var_name:
             self.errors.append(ValidationError(
-                "变量缺少名称",
+                "Variable missing name",
                 rule="variable_name_required",
                 line=var_node.line,
-                suggestions=["为变量指定名称"]
+                suggestions=["Specify a name for the variable"]
             ))
         
-        # 宽松的类型验证：只在严格模式下进行类型检查
+        # Relaxed type validation: only perform type checking in strict mode
         if self.config.strict_mode and var_value is not None and inferred_type:
             actual_type = self._get_actual_type(var_value)
-            # 允许兼容的类型转换
+            # Allow compatible type conversions
             if not self._is_type_compatible(actual_type, inferred_type):
                 self.warnings.append(
-                    f"变量 '{var_name}' 类型可能不匹配: 期望 {inferred_type}, 实际 {actual_type}"
+                    f"Variable '{var_name}' type may not match: expected {inferred_type}, actual {actual_type}"
                 )
     
     def _is_type_compatible(self, actual_type: str, expected_type: str) -> bool:
-        """检查类型兼容性"""
+        """Check type compatibility"""
         if actual_type == expected_type:
             return True
         
-        # 宽松的类型兼容性规则
+        # Relaxed type compatibility rules
         compatible_types = {
-            "integer": ["string", "float"],  # 数字可以来自字符串或浮点
-            "float": ["string", "integer"],   # 浮点可以来自字符串或整数
-            "string": ["integer", "float", "boolean"],  # 字符串可以表示任何类型
-            "boolean": ["string"],            # 布尔值可以来自字符串
+            "integer": ["string", "float"],  # Numbers can come from strings or floats
+            "float": ["string", "integer"],   # Floats can come from strings or integers
+            "string": ["integer", "float", "boolean"],  # Strings can represent any type
+            "boolean": ["string"],            # Boolean values can come from strings
         }
         
         return actual_type in compatible_types.get(expected_type, [])
     
     def _validate_task_type(self, task_node: ASTNode, context: ParseContext) -> None:
-        """验证任务类型"""
+        """Validate task type"""
         task_id = task_node.get_attribute("id")
         
         if not task_id:
             self.errors.append(ValidationError(
-                "任务缺少 ID",
+                "Task missing ID",
                 rule="task_id_required",
                 line=task_node.line,
-                suggestions=["为任务指定唯一的 ID"]
+                suggestions=["Specify a unique ID for the task"]
             ))
         
-        # 检查任务是否有内容
+        # Check if task has content
         if not task_node.children:
-            self.warnings.append(f"任务 '{task_id}' 没有内容")
+            self.warnings.append(f"Task '{task_id}' has no content")
     
     def _validate_tool_type(self, tool_node: ASTNode, context: ParseContext) -> None:
-        """验证工具类型"""
+        """Validate tool type"""
         tool_name = tool_node.get_attribute("name")
         
         if not tool_name:
             self.errors.append(ValidationError(
-                "工具缺少名称",
+                "Tool missing name",
                 rule="tool_name_required",
                 line=tool_node.line,
-                suggestions=["为工具指定名称"]
+                suggestions=["Specify a name for the tool"]
             ))
     
     def _validate_node_scope(self, node: ASTNode, scope_stack: List[Dict[str, Any]], context: ParseContext) -> None:
-        """验证节点作用域"""
-        # 进入新作用域
+        """Validate node scope"""
+        # Enter new scope
         if node.node_type in ["task", "tool", "if", "else"]:
             scope_stack.append({})
         
-        # 处理变量定义
+        # Handle variable definitions
         if node.node_type == "var":
             var_name = node.get_attribute("name")
             if var_name:
-                # 检查当前作用域是否已定义
+                # Check if already defined in current scope
                 if var_name in scope_stack[-1]:
                     self.errors.append(ValidationError(
-                        f"变量 '{var_name}' 在当前作用域重复定义",
+                        f"Variable '{var_name}' redefined in current scope",
                         rule="variable_redefinition",
                         line=node.line,
-                        suggestions=["使用不同的变量名或检查作用域"]
+                        suggestions=["Use a different variable name or check scope"]
                     ))
                 else:
                     scope_stack[-1][var_name] = node
         
-        # 递归处理子节点
+        # Recursively process child nodes
         for child in node.children:
             self._validate_node_scope(child, scope_stack, context)
         
-        # 退出作用域
+        # Exit scope
         if node.node_type in ["task", "tool", "if", "else"]:
             scope_stack.pop()
     
     def _check_id_conflicts(self, ast_root: ASTNode, context: ParseContext) -> None:
-        """检查 ID 冲突"""
-        # 收集所有 ID
+        """Check ID conflicts"""
+        # Collect all IDs
         ids = {}
         
-        # 任务 ID
+        # Task IDs
         task_nodes = self._find_nodes_by_type(ast_root, "task")
         for task_node in task_nodes:
             task_id = task_node.get_attribute("id")
             if task_id:
                 if task_id in ids:
                     self.errors.append(ValidationError(
-                        f"任务 ID '{task_id}' 重复定义",
+                        f"Task ID '{task_id}' duplicate definition",
                         rule="unique_task_id",
                         line=task_node.line,
-                        suggestions=["使用唯一的任务 ID"]
+                        suggestions=["Use a unique task ID"]
                     ))
                 else:
                     ids[task_id] = task_node
         
-        # 工具 ID
+        # Tool IDs
         tool_nodes = self._find_nodes_by_type(ast_root, "tool")
         for tool_node in tool_nodes:
             tool_id = tool_node.get_attribute("id")
             if tool_id:
                 if tool_id in ids:
                     self.errors.append(ValidationError(
-                        f"工具 ID '{tool_id}' 与其他元素冲突",
+                        f"Tool ID '{tool_id}' conflicts with other elements",
                         rule="unique_id",
                         line=tool_node.line,
-                        suggestions=["使用唯一的工具 ID"]
+                        suggestions=["Use a unique tool ID"]
                     ))
                 else:
                     ids[tool_id] = tool_node
     
     def _check_name_conflicts(self, ast_root: ASTNode, context: ParseContext) -> None:
-        """检查名称冲突"""
-        # 收集所有名称
+        """Check name conflicts"""
+        # Collect all names
         names = {}
         
-        # 变量名
+        # Variable names
         var_nodes = self._find_nodes_by_type(ast_root, "var")
         for var_node in var_nodes:
             var_name = var_node.get_attribute("name")
             if var_name:
                 if var_name in names:
                     self.errors.append(ValidationError(
-                        f"变量名 '{var_name}' 重复定义",
+                        f"Variable name '{var_name}' duplicate definition",
                         rule="unique_variable_name",
                         line=var_node.line,
-                        suggestions=["使用唯一的变量名"]
+                        suggestions=["Use a unique variable name"]
                     ))
                 else:
                     names[var_name] = var_node
         
-        # 工具名
+        # Tool names
         tool_nodes = self._find_nodes_by_type(ast_root, "tool")
         for tool_node in tool_nodes:
             tool_name = tool_node.get_attribute("name")
             if tool_name:
                 if tool_name in names:
                     self.errors.append(ValidationError(
-                        f"工具名 '{tool_name}' 与变量名冲突",
+                        f"Tool name '{tool_name}' conflicts with variable name",
                         rule="unique_name",
                         line=tool_node.line,
-                        suggestions=["使用不同的工具名"]
+                        suggestions=["Use a different tool name"]
                     ))
                 else:
                     names[tool_name] = tool_node
     
     def _check_resource_conflicts(self, ast_root: ASTNode, context: ParseContext) -> None:
-        """检查资源冲突"""
-        # 检查端口冲突
+        """Check resource conflicts"""
+        # Check port conflicts
         ports = {}
         
-        # 从工具参数中检查端口
+        # Check ports from tool parameters
         tool_nodes = self._find_nodes_by_type(ast_root, "tool")
         for tool_node in tool_nodes:
             parameters = tool_node.get_attribute("parameters", {})
@@ -392,33 +392,33 @@ class Validator:
                 if port:
                     if port in ports:
                         self.errors.append(ValidationError(
-                            f"端口 {port} 冲突",
+                            f"Port {port} conflict",
                             rule="unique_port",
                             line=tool_node.line,
-                            suggestions=["使用不同的端口号"]
+                            suggestions=["Use a different port number"]
                         ))
                     else:
                         ports[port] = tool_node
     
     def _collect_symbols(self, ast_root: ASTNode) -> Dict[str, ASTNode]:
-        """收集所有符号"""
+        """Collect all symbols"""
         symbols = {}
         
-        # 收集任务符号
+        # Collect task symbols
         task_nodes = self._find_nodes_by_type(ast_root, "task")
         for task_node in task_nodes:
             task_id = task_node.get_attribute("id")
             if task_id:
                 symbols[task_id] = task_node
         
-        # 收集变量符号
+        # Collect variable symbols
         var_nodes = self._find_nodes_by_type(ast_root, "var")
         for var_node in var_nodes:
             var_name = var_node.get_attribute("name")
             if var_name:
                 symbols[var_name] = var_node
         
-        # 收集工具符号
+        # Collect tool symbols
         tool_nodes = self._find_nodes_by_type(ast_root, "tool")
         for tool_node in tool_nodes:
             tool_name = tool_node.get_attribute("name")
@@ -428,47 +428,47 @@ class Validator:
         return symbols
     
     def _check_references(self, node: ASTNode, symbols: Dict[str, ASTNode], context: ParseContext) -> None:
-        """检查引用"""
+        """Check references"""
         if node.node_type == "text":
             content = node.get_attribute("content", "")
-            # 查找引用
+            # Find references
             import re
             refs = re.findall(r'[@$]\{([a-zA-Z_][a-zA-Z0-9_]*)\}', content)
             
             for ref in refs:
                 if ref not in symbols:
-                    # 检查是否是内置引用
+                    # Check if it's a built-in reference
                     if not self._is_builtin_reference(ref):
                         self.errors.append(ValidationError(
-                            f"未定义的引用: {ref}",
+                            f"Undefined reference: {ref}",
                             rule="undefined_reference",
                             line=node.line,
-                            suggestions=[f"定义变量或任务 '{ref}'", "检查引用名称拼写"]
+                            suggestions=[f"Define variable or task '{ref}'", "Check reference name spelling"]
                         ))
         
-        # 递归检查子节点
+        # Recursively check child nodes
         for child in node.children:
             self._check_references(child, symbols, context)
     
     def _check_task_flow_consistency(self, ast_root: ASTNode, context: ParseContext) -> None:
-        """检查任务流一致性"""
+        """Check task flow consistency"""
         task_nodes = self._find_nodes_by_type(ast_root, "task")
         
-        # 检查是否有入口任务
+        # Check if there are entry tasks
         if not task_nodes:
-            self.warnings.append("没有定义任何任务")
+            self.warnings.append("No tasks defined")
             return
         
-        # 检查任务流的完整性
+        # Check task flow completeness
         for task_node in task_nodes:
             task_id = task_node.get_attribute("id")
             if task_id:
-                # 检查任务是否有合理的内容
+                # Check if task has reasonable content
                 if not task_node.children:
-                    self.warnings.append(f"任务 '{task_id}' 没有内容")
+                    self.warnings.append(f"Task '{task_id}' has no content")
     
     def _check_tool_parameter_consistency(self, ast_root: ASTNode, context: ParseContext) -> None:
-        """检查工具参数一致性"""
+        """Check tool parameter consistency"""
         tool_nodes = self._find_nodes_by_type(ast_root, "tool")
         
         for tool_node in tool_nodes:
@@ -476,18 +476,18 @@ class Validator:
             parameters = tool_node.get_attribute("parameters", {})
             
             if tool_name and isinstance(parameters, dict):
-                # 检查参数的有效性
+                # Check parameter validity
                 for param_name, param_value in parameters.items():
                     if not self._is_valid_parameter(param_name, param_value):
                         self.errors.append(ValidationError(
-                            f"工具 '{tool_name}' 的参数 '{param_name}' 无效",
+                            f"Tool '{tool_name}' parameter '{param_name}' is invalid",
                             rule="invalid_parameter",
                             line=tool_node.line,
-                            suggestions=["检查参数名称和值"]
+                            suggestions=["Check parameter name and value"]
                         ))
     
     def _get_actual_type(self, value: Any) -> str:
-        """获取实际类型"""
+        """Get actual type"""
         if value is None:
             return "none"
         elif isinstance(value, bool):
@@ -506,17 +506,17 @@ class Validator:
             return "unknown"
     
     def _is_builtin_reference(self, ref_name: str) -> bool:
-        """检查是否是内置引用"""
+        """Check if it's a built-in reference"""
         builtin_refs = ["env", "config", "context", "result", "input", "output", "this", "self"]
         return ref_name in builtin_refs
     
     def _is_valid_parameter(self, param_name: str, param_value: Any) -> bool:
-        """检查参数是否有效"""
-        # 简单的参数验证
+        """Check if parameter is valid"""
+        # Simple parameter validation
         if not param_name or not isinstance(param_name, str):
             return False
         
-        # 检查参数名格式
+        # Check parameter name format
         import re
         if not re.match(r'^[a-zA-Z_][a-zA-Z0-9_]*$', param_name):
             return False
@@ -524,5 +524,5 @@ class Validator:
         return True
     
     def get_warnings(self) -> List[str]:
-        """获取警告列表"""
+        """Get warning list"""
         return self.warnings.copy() 

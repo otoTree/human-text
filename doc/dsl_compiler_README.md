@@ -224,6 +224,8 @@ DSL_LOG_LEVEL=INFO
 | `output_format` | `yaml` | Output format (yaml/json/proto) |
 | `llm_enabled` | `true` | Enable LLM enhancement |
 | `llm_provider` | `dashscope` | LLM provider |
+| `llm_save_intermediate` | `false` | Save intermediate DSL code |
+| `llm_intermediate_dir` | `null` | Directory for intermediate files |
 | `strict_mode` | `true` | Strict validation mode |
 | `compact_mode` | `false` | Compact output format |
 | `max_file_size` | `10MB` | Maximum file size |
@@ -252,6 +254,25 @@ export DSL_LLM_MODEL=gpt-3.5-turbo
 export DSL_LLM_PROVIDER=context_service
 export DSL_CONTEXT_SERVICE_URL=http://localhost:8001
 ```
+
+### 中间结果保存
+
+为了调试和分析LLM转换过程，您可以保存LLM生成的中间DSL代码：
+
+```bash
+# 启用中间结果保存
+export DSL_LLM_SAVE_INTERMEDIATE=true
+
+# 指定保存目录（可选，默认为源文件目录下的 llm_intermediate 子目录）
+export DSL_LLM_INTERMEDIATE_DIR=./intermediate_results
+```
+
+启用后，每次LLM转换都会生成带时间戳的 `.dsl` 文件，包含：
+- 原始DSL代码
+- 生成时间和来源信息  
+- 使用的LLM提供商和模型信息
+
+示例生成的文件名：`password_reset_llm_generated_20250714_162839.dsl`
 
 ## Architecture
 

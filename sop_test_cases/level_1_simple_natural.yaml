@@ -1,0 +1,102 @@
+metadata:
+  directive_count: 0
+  source_file: sop_test_cases/level_1_simple_natural.txt
+  compiled_at: '2025-07-14T15:53:21.581290'
+variables:
+- name: reset_token_validity
+  value: '15'
+  type: string
+  scope: global
+- name: user_identifier
+  value: ''
+  type: string
+  scope: global
+tasks:
+- id: verify_identity
+  title: 验证用户身份
+  body:
+  - type: tool_call
+    line_number: 7
+    tool_call:
+      name: user_database_query
+      description: 查询该用户是否存在
+  - type: text
+    content: 接收用户在密码重置页面输入的邮箱地址或手机号     用户标识：{{user_identifier}}
+    line_number: 5
+  - type: conditional
+    line_number: 8
+    conditional:
+      branches:
+      - condition: user_exists == true
+        actions:
+        - type: text
+          content: 生成有时效性的安全一次性重置令牌
+        - type: jump
+          jump:
+            target: send_reset_instructions
+      - actions:
+        - type: text
+          content: 用户不存在，终止流程
+        - type: jump
+          jump:
+            target: END
+      line_number: 8
+- id: send_reset_instructions
+  title: 发送重置指引
+  body:
+  - type: tool_call
+    line_number: 17
+    tool_call:
+      name: email_service_send_link
+      description: 发送包含重置链接的邮件
+  - type: text
+    content: 创建包含重置令牌的安全链接
+    line_number: 16
+  - type: next_action
+    line_number: 18
+    next_action:
+      target: perform_password_reset
+  next:
+  - perform_password_reset
+- id: perform_password_reset
+  title: 执行密码重置
+  body:
+  - type: text
+    content: 验证重置链接中的令牌是否有效且未过期
+    line_number: 21
+  - type: conditional
+    line_number: 22
+    conditional:
+      branches:
+      - condition: token_valid == true
+        actions:
+        - type: tool_call
+          tool_call:
+            name: user_database_update_password
+            description: 更新用户密码
+        - type: tool_call
+          tool_call:
+            name: email_service_send_confirmation
+            description: 发送密码重置成功通知
+        - type: text
+          content: 引导用户输入并确认新密码
+        - type: jump
+          jump:
+            target: END
+      - actions:
+        - type: text
+          content: 令牌无效或已过期，重置失败
+        - type: jump
+          jump:
+            target: END
+      line_number: 22
+- id: END
+  title: 流程结束
+  body:
+  - type: text
+    content: 密码重置流程完成
+    line_number: 32
+entry_point: verify_identity
+compiled_at: 2025-07-14 15:53:21.581446
+source_files:
+- sop_test_cases/level_1_simple_natural.txt

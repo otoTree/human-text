@@ -1,12 +1,15 @@
 """
-DSL 编译器 LLM 增强器
-自然语言→结构化，调用 RAG & PromptCompiler
+DSL Compiler LLM Enhancement Module
+Uses LLM to directly convert natural language to DSL code
 """
 
-import json
 import asyncio
-from typing import Dict, List, Any, Optional, Tuple
 import aiohttp
+import json
+import os
+from datetime import datetime
+from typing import Dict, List, Any, Optional
+
 from .config import CompilerConfig
 from .models import ParseContext
 from .parser import ASTNode
@@ -14,32 +17,19 @@ from .exceptions import LLMError, CompilerError
 
 
 class LLMAugmentor:
-    """LLM 增强器"""
+    """LLM Augmentor - Direct conversion to DSL code"""
     
     def __init__(self, config: CompilerConfig):
         self.config = config
         self.session: Optional[aiohttp.ClientSession] = None
     
     def augment(self, ast_root: ASTNode, context: ParseContext) -> ASTNode:
-        """
-        增强 AST
-        
-        Args:
-            ast_root: 根 AST 节点
-            context: 解析上下文
-            
-        Returns:
-            ASTNode: 增强后的 AST
-            
-        Raises:
-            LLMError: LLM 调用错误
-        """
+        """Enhance AST"""
         try:
-            # 检查是否需要 LLM 增强
             if not self._needs_augmentation(ast_root):
                 return ast_root
             
-            # 异步处理 LLM 增强
+            # Asynchronous LLM enhancement processing
             loop = asyncio.get_event_loop()
             return loop.run_until_complete(self._augment_async(ast_root, context))
             
@@ -47,210 +37,191 @@ class LLMAugmentor:
             if isinstance(e, LLMError):
                 raise
             else:
-                raise LLMError(f"LLM 增强失败: {str(e)}")
+                raise LLMError(f"LLM enhancement failed: {str(e)}")
     
     async def _augment_async(self, ast_root: ASTNode, context: ParseContext) -> ASTNode:
-        """异步增强 AST"""
-        # 创建 HTTP 会话
+        """Asynchronous enhancement processing"""
         async with aiohttp.ClientSession() as session:
             self.session = session
             
-            # 1. 分析文本结构
-            await self._analyze_structure(ast_root, context)
+            # Collect natural language content
+            natural_content = self._collect_text_content(ast_root)
             
-            # 2. 提取任务结构
-            await self._extract_tasks(ast_root, context)
+            if not natural_content.strip():
+                return ast_root
             
-            # 3. 增强内容
-            await self._enhance_content(ast_root, context)
+            # Call LLM to directly convert to DSL code
+            dsl_code = await self._convert_to_dsl(natural_content)
             
-            # 4. 验证结果
-            self._validate_augmented_ast(ast_root, context)
+            # Save intermediate DSL code if configured
+            if self.config.llm_save_intermediate:
+                await self._save_intermediate_dsl(dsl_code, context)
             
-            return ast_root
+            # Write generated DSL code to temporary file and re-parse
+            return await self._reparse_dsl_code(dsl_code, context)
     
-    async def _analyze_structure(self, ast_root: ASTNode, context: ParseContext) -> None:
-        """分析文本结构"""
-        # 收集所有文本内容
-        text_content = self._collect_text_content(ast_root)
-        
-        if not text_content.strip():
-            return
-        
-        # 调用 LLM 分析结构
+    async def _convert_to_dsl(self, natural_content: str) -> str:
+        """Convert natural language to DSL code"""
         prompt = f"""
-请分析以下文本的结构，并提供结构化建议：
+You are a professional DSL code generator. Please convert the following natural language description directly to DSL code format.
 
-输入文本：
-{text_content}
+Natural language description:
+{natural_content}
 
-请分析：
-1. 文本是否包含明确的任务流程？
-2. 是否有条件判断逻辑？
-3. 是否需要工具或变量定义？
-4. 文本的主要意图是什么？
+Please strictly output in the following DSL syntax format, do not add any explanatory text:
 
-请以JSON格式回答：
-{{
-    "has_workflow": true/false,
-    "has_conditions": true/false,
-    "needs_tools": true/false,
-    "needs_variables": true/false,
-    "main_intent": "主要意图描述",
-    "suggested_structure": "建议的结构化方式",
-    "confidence": 0.0-1.0
-}}
+DSL syntax rules:
+1. Variable definition: @var variable_name = value
+2. Task definition: @task task_id task_title
+3. Tool call: @tool tool_name tool_description
+4. Conditional statement: @if condition / @else / @endif
+5. Jump instruction: @next target_task
+6. Task content is indicated by indentation
+
+Example format:
+```
+@var reset_token_validity = 15
+@var user_email = ""
+
+@task verify_user Verify user identity
+    Receive user email address entered on password reset page
+    User email: {{{{user_email}}}}
+    @tool user_database_query Check if this user exists
+    @if user_exists == true
+        Generate secure one-time reset token
+        @next send_reset_link
+    @else
+        User does not exist, terminate process
+        @next END
+
+@task send_reset_link Send reset link
+    Create secure link containing reset token
+    @tool email_service_send Send reset link email
+    @next execute_reset
+
+@task execute_reset Execute password reset
+    Verify validity of reset link
+    @if token_valid == true
+        Guide user to set new password
+        @tool user_database_update Update user password
+        @tool email_service_notify Send success notification
+        @next END
+    @else
+        Token invalid, reset failed
+        @next END
+
+@task END Process complete
+    Password reset process completed
+```
+
+Requirements:
+- Identify clear steps, each major step as a task
+- Assign unique IDs to each task (using snake_case format)
+- Extract required tools and variables
+- Tool names should avoid duplication, use descriptive suffixes
+- Maintain original semantics and logical flow
+- Only output DSL code, no other text
+
+Please start conversion:
 """
         
         try:
             response = await self._call_llm(prompt)
-            analysis = json.loads(response)
-            
-            # 将分析结果存储到根节点
-            ast_root.set_attribute("structure_analysis", analysis)
+            # Clean response and extract code part
+            dsl_code = self._extract_dsl_code(response)
+            return dsl_code
             
         except Exception as e:
-            raise LLMError(f"结构分析失败: {str(e)}")
+            raise LLMError(f"DSL conversion failed: {str(e)}")
     
-    async def _extract_tasks(self, ast_root: ASTNode, context: ParseContext) -> None:
-        """提取任务结构"""
-        # 获取结构分析结果
-        analysis = ast_root.get_attribute("structure_analysis", {})
+    def _extract_dsl_code(self, response: str) -> str:
+        """Extract DSL code from LLM response"""
+        response = response.strip()
         
-        if not analysis.get("has_workflow", False):
-            return
+        # If response contains code block markers, extract content within them
+        if "```" in response:
+            lines = response.split('\n')
+            in_code_block = False
+            code_lines = []
+            
+            for line in lines:
+                if line.strip().startswith('```'):
+                    in_code_block = not in_code_block
+                    continue
+                if in_code_block:
+                    code_lines.append(line)
+            
+            if code_lines:
+                return '\n'.join(code_lines)
         
-        # 收集需要处理的文本
-        text_content = self._collect_text_content(ast_root)
+        # If no code block markers, look for lines starting with @
+        lines = response.split('\n')
+        dsl_lines = []
+        found_dsl = False
         
-        # 调用 LLM 提取任务
-        prompt = f"""
-请从以下自然语言描述中提取任务结构：
-
-输入文本：
-{text_content}
-
-请按照以下格式输出 JSON：
-{{
-    "tasks": [
-        {{
-            "id": "任务ID",
-            "title": "任务标题",
-            "description": "任务描述",
-            "steps": ["步骤1", "步骤2", "..."]
-        }}
-    ],
-    "tools": [
-        {{
-            "name": "工具名称",
-            "description": "工具描述",
-            "parameters": {{"param1": "参数说明"}}
-        }}
-    ],
-    "variables": [
-        {{
-            "name": "变量名",
-            "value": "变量值",
-            "type": "变量类型"
-        }}
-    ]
-}}
-
-要求：
-1. 任务ID使用snake_case格式
-2. 识别出明确的操作步骤
-3. 提取出可能需要的工具和变量
-4. 保持语义的准确性
-"""
+        for line in lines:
+            # Skip empty lines and explanatory text until DSL code is found
+            if line.strip().startswith('@') or found_dsl:
+                found_dsl = True
+                dsl_lines.append(line)
+            elif found_dsl and line.strip() and not line.strip().startswith('#'):
+                # If already in DSL code, continue adding non-comment lines
+                dsl_lines.append(line)
+        
+        if dsl_lines:
+            return '\n'.join(dsl_lines)
+        
+        # If nothing found, return original response
+        return response
+    
+    async def _reparse_dsl_code(self, dsl_code: str, context: ParseContext) -> ASTNode:
+        """Re-parse generated DSL code"""
+        from .preprocessor import Preprocessor
+        from .lexer import Lexer
+        from .parser import Parser
         
         try:
-            response = await self._call_llm(prompt)
-            extraction = json.loads(response)
+            # Create new parsing context
+            new_context = ParseContext(
+                source_file=context.source_file,
+                current_line=1,
+                current_column=1
+            )
             
-            # 创建新的 AST 节点
-            await self._create_extracted_nodes(ast_root, extraction, context)
+            # Preprocessing
+            preprocessor = Preprocessor(self.config)
+            processed_content = preprocessor.process(dsl_code, new_context)
             
-        except Exception as e:
-            raise LLMError(f"任务提取失败: {str(e)}")
-    
-    async def _enhance_content(self, ast_root: ASTNode, context: ParseContext) -> None:
-        """增强内容"""
-        # 遍历所有任务节点
-        for task_node in self._find_nodes_by_type(ast_root, "task"):
-            await self._enhance_task_content(task_node, context)
-    
-    async def _enhance_task_content(self, task_node: ASTNode, context: ParseContext) -> None:
-        """增强任务内容"""
-        task_id = task_node.get_attribute("id", "")
-        title = task_node.get_attribute("title", "")
-        
-        # 收集任务的文本内容
-        content = self._collect_text_content(task_node)
-        
-        if not content.strip():
-            return
-        
-        # 收集相关工具和变量
-        tools = self._collect_related_tools(task_node)
-        variables = self._collect_related_variables(task_node)
-        
-        # 调用 LLM 增强内容
-        prompt = f"""
-请增强以下任务内容，使其更加清晰和可执行：
-
-原始内容：
-{content}
-
-上下文信息：
-- 任务ID: {task_id}
-- 任务标题: {title}
-- 相关工具: {json.dumps(tools)}
-- 相关变量: {json.dumps(variables)}
-
-请提供：
-1. 增强的任务描述
-2. 具体的执行步骤
-3. 可能的输入输出
-4. 注意事项
-
-以JSON格式回答：
-{{
-    "enhanced_description": "增强后的描述",
-    "execution_steps": ["步骤1", "步骤2", "..."],
-    "inputs": ["输入1", "输入2", "..."],
-    "outputs": ["输出1", "输出2", "..."],
-    "notes": ["注意事项1", "注意事项2", "..."]
-}}
-"""
-        
-        try:
-            response = await self._call_llm(prompt)
-            enhancement = json.loads(response)
+            # Lexical analysis
+            lexer = Lexer(self.config)
+            tokens = lexer.tokenize(processed_content, new_context)
             
-            # 更新任务节点
-            self._apply_content_enhancement(task_node, enhancement)
+            # Syntax analysis
+            parser = Parser(self.config)
+            new_ast = parser.parse(tokens, new_context)
+            
+            return new_ast
             
         except Exception as e:
-            raise LLMError(f"内容增强失败: {str(e)}")
+            # If re-parsing fails, return original AST with error information
+            raise LLMError(f"Re-parsing DSL code failed: {str(e)}")
     
     async def _call_llm(self, prompt: str) -> str:
-        """调用 LLM 服务"""
+        """Call LLM service"""
         if self.session is None:
-            raise LLMError("HTTP 会话未初始化")
+            raise LLMError("HTTP session not initialized")
         
         if self.config.llm_provider == "dashscope":
             return await self._call_dashscope(prompt)
         elif self.config.llm_provider == "openai":
             return await self._call_openai(prompt)
-        elif self.config.llm_provider == "context_service":
-            return await self._call_context_service(prompt)
         else:
-            raise LLMError(f"不支持的 LLM 提供商: {self.config.llm_provider}")
+            raise LLMError(f"Unsupported LLM provider: {self.config.llm_provider}")
     
     async def _call_dashscope(self, prompt: str) -> str:
-        """调用 DashScope API"""
+        """Call DashScope API"""
         if self.session is None:
-            raise LLMError("HTTP 会话未初始化")
+            raise LLMError("HTTP session not initialized")
         
         headers = {
             "Authorization": f"Bearer {self.config.llm_api_key}",
@@ -281,17 +252,17 @@ class LLMAugmentor:
                     return result["output"]["text"]
                 else:
                     error_text = await response.text()
-                    raise LLMError(f"DashScope API 错误: {error_text}")
+                    raise LLMError(f"DashScope API error: {error_text}")
                     
         except asyncio.TimeoutError:
-            raise LLMError("LLM 调用超时")
+            raise LLMError("LLM call timeout")
         except Exception as e:
-            raise LLMError(f"DashScope 调用失败: {str(e)}")
+            raise LLMError(f"DashScope call failed: {str(e)}")
     
     async def _call_openai(self, prompt: str) -> str:
-        """调用 OpenAI API"""
+        """Call OpenAI API"""
         if self.session is None:
-            raise LLMError("HTTP 会话未初始化")
+            raise LLMError("HTTP session not initialized")
         
         headers = {
             "Authorization": f"Bearer {self.config.llm_api_key}",
@@ -306,7 +277,8 @@ class LLMAugmentor:
                     "content": prompt
                 }
             ],
-            "max_tokens": 4000
+            "max_tokens": 2000,
+            "temperature": 0.3
         }
         
         api_base = self.config.llm_api_base or "https://api.openai.com/v1"
@@ -323,99 +295,94 @@ class LLMAugmentor:
                     return result["choices"][0]["message"]["content"]
                 else:
                     error_text = await response.text()
-                    raise LLMError(f"OpenAI API 错误: {error_text}")
+                    raise LLMError(f"OpenAI API error: {error_text}")
                     
         except asyncio.TimeoutError:
-            raise LLMError("LLM 调用超时")
+            raise LLMError("LLM call timeout")
         except Exception as e:
-            raise LLMError(f"OpenAI 调用失败: {str(e)}")
-    
-    async def _call_context_service(self, prompt: str) -> str:
-        """调用 Context Service"""
-        if self.session is None:
-            raise LLMError("HTTP 会话未初始化")
-        
-        headers = {
-            "Content-Type": "application/json"
-        }
-        
-        data = {
-            "prompt": prompt,
-            "max_tokens": 4000
-        }
-        
-        try:
-            async with self.session.post(
-                f"{self.config.context_service_url}/llm/generate",
-                headers=headers,
-                json=data,
-                timeout=aiohttp.ClientTimeout(total=self.config.context_service_timeout)
-            ) as response:
-                if response.status == 200:
-                    result = await response.json()
-                    return result["response"]
-                else:
-                    error_text = await response.text()
-                    raise LLMError(f"Context Service 错误: {error_text}")
-                    
-        except asyncio.TimeoutError:
-            raise LLMError("Context Service 调用超时")
-        except Exception as e:
-            raise LLMError(f"Context Service 调用失败: {str(e)}")
+            raise LLMError(f"OpenAI call failed: {str(e)}")
     
     def _needs_augmentation(self, ast_root: ASTNode) -> bool:
-        """检查是否需要增强"""
-        # 检查是否有纯文本内容没有结构化
+        """Check if augmentation is needed"""
+        if not self.config.llm_enabled:
+            return False
+        
+        # Collect all text content
         text_nodes = self._find_nodes_by_type(ast_root, "text")
+        total_text_content = ""
+        structured_content_count = 0
+        natural_language_count = 0
         
         for text_node in text_nodes:
-            content = text_node.get_attribute("content", "")
-            if content.strip() and not self._is_structured_content(content):
-                return True
+            content = text_node.get_attribute("content", "").strip()
+            if content:
+                total_text_content += content + " "
+                
+                if self._is_structured_content(content):
+                    structured_content_count += 1
+                else:
+                    natural_language_count += 1
         
-        # 检查是否有空的任务需要增强
-        task_nodes = self._find_nodes_by_type(ast_root, "task")
-        for task_node in task_nodes:
-            if not task_node.children:
-                return True
+        # Check if tasks, tools, variables are defined
+        task_count = len(self._find_nodes_by_type(ast_root, "task"))
+        tool_count = len(self._find_nodes_by_type(ast_root, "tool"))
+        var_count = len(self._find_nodes_by_type(ast_root, "var"))
+        
+        # Judgment criteria:
+        # 1. If no DSL structure (tasks, tools, variables) and natural language content exists, augmentation needed
+        if task_count == 0 and tool_count == 0 and var_count == 0 and total_text_content.strip():
+            return True
+        
+        # 2. If natural language content far exceeds structured content, augmentation needed
+        if natural_language_count > structured_content_count * 2:
+            return True
+        
+        # 3. If text content is very long but structure is minimal, augmentation needed
+        if len(total_text_content) > 500 and (task_count + tool_count + var_count) < 3:
+            return True
+        
+        # 4. Check if contains process keywords
+        process_keywords = ["step", "first step", "second step", "third step", "then", "next", "finally", "process", "procedure"]
+        if any(keyword in total_text_content.lower() for keyword in process_keywords):
+            return True
         
         return False
     
     def _is_structured_content(self, content: str) -> bool:
-        """检查内容是否已经结构化"""
-        # 简单的启发式检查
-        structured_patterns = [
-            r'^\s*\d+\.',  # 数字列表
-            r'^\s*[-*+]',  # 项目符号
-            r'^\s*@\w+',   # 指令
-            r'```',        # 代码块
-        ]
+        """Check if content is already structured"""
+        # Check if contains DSL keywords
+        dsl_keywords = ["@task", "@tool", "@var", "@if", "@else", "@endif", "@next", "@agent", "@lang"]
         
-        import re
-        for pattern in structured_patterns:
-            if re.search(pattern, content, re.MULTILINE):
+        for keyword in dsl_keywords:
+            if keyword in content:
                 return True
+        
+        # Check if contains variable reference format
+        import re
+        if re.search(r'\{\{.*?\}\}', content):
+            return True
         
         return False
     
     def _collect_text_content(self, node: ASTNode) -> str:
-        """收集节点的文本内容"""
-        content = []
+        """Collect all text content from node"""
+        content_parts = []
         
         if node.node_type == "text":
-            text = node.get_attribute("content", "")
-            if text.strip():
-                content.append(text)
+            content = node.get_attribute("content", "")
+            if content.strip():
+                content_parts.append(content.strip())
         
+        # Recursively collect text from child nodes
         for child in node.children:
             child_content = self._collect_text_content(child)
-            if child_content.strip():
-                content.append(child_content)
+            if child_content:
+                content_parts.append(child_content)
         
-        return "\n".join(content)
+        return "\n".join(content_parts)
     
     def _find_nodes_by_type(self, node: ASTNode, node_type: str) -> List[ASTNode]:
-        """查找指定类型的节点"""
+        """Find nodes of specified type"""
         nodes = []
         
         if node.node_type == node_type:
@@ -426,120 +393,40 @@ class LLMAugmentor:
         
         return nodes
     
-    def _collect_related_tools(self, task_node: ASTNode) -> List[Dict[str, Any]]:
-        """收集相关工具"""
-        tools = []
-        
-        # 从父节点或兄弟节点中查找工具定义
-        if task_node.parent:
-            for sibling in task_node.parent.children:
-                if sibling.node_type == "tool":
-                    tools.append({
-                        "name": sibling.get_attribute("name", ""),
-                        "description": sibling.get_attribute("description", "")
-                    })
-        
-        return tools
-    
-    def _collect_related_variables(self, task_node: ASTNode) -> List[Dict[str, Any]]:
-        """收集相关变量"""
-        variables = []
-        
-        # 从父节点或兄弟节点中查找变量定义
-        if task_node.parent:
-            for sibling in task_node.parent.children:
-                if sibling.node_type == "var":
-                    variables.append({
-                        "name": sibling.get_attribute("name", ""),
-                        "value": sibling.get_attribute("value", ""),
-                        "type": sibling.get_attribute("inferred_type", "")
-                    })
-        
-        return variables
-    
-    async def _create_extracted_nodes(self, ast_root: ASTNode, extraction: Dict[str, Any], context: ParseContext) -> None:
-        """创建提取的节点"""
-        # 创建任务节点
-        for task_data in extraction.get("tasks", []):
-            task_node = ASTNode("task", 0, 0)
-            task_node.set_attribute("id", task_data["id"])
-            task_node.set_attribute("title", task_data["title"])
+    async def _save_intermediate_dsl(self, dsl_code: str, context: ParseContext) -> None:
+        """Save intermediate DSL code to file"""
+        try:
+            # Determine save directory
+            if self.config.llm_intermediate_dir:
+                save_dir = self.config.llm_intermediate_dir
+            else:
+                # Use the same directory as source file
+                source_dir = os.path.dirname(context.source_file) if context.source_file else "."
+                save_dir = os.path.join(source_dir, "llm_intermediate")
             
-            # 创建描述文本节点
-            if task_data.get("description"):
-                desc_node = ASTNode("text", 0, 0)
-                desc_node.set_attribute("content", task_data["description"])
-                task_node.add_child(desc_node)
+            # Create directory if it doesn't exist
+            os.makedirs(save_dir, exist_ok=True)
             
-            # 创建步骤文本节点
-            for step in task_data.get("steps", []):
-                step_node = ASTNode("text", 0, 0)
-                step_node.set_attribute("content", f"- {step}")
-                task_node.add_child(step_node)
+            # Generate filename with timestamp
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            source_name = os.path.basename(context.source_file) if context.source_file else "unknown"
+            base_name = os.path.splitext(source_name)[0]
+            filename = f"{base_name}_llm_generated_{timestamp}.dsl"
+            filepath = os.path.join(save_dir, filename)
             
-            ast_root.add_child(task_node)
-        
-        # 创建工具节点
-        for tool_data in extraction.get("tools", []):
-            tool_node = ASTNode("tool", 0, 0)
-            tool_node.set_attribute("name", tool_data["name"])
-            tool_node.set_attribute("description", tool_data["description"])
-            tool_node.set_attribute("parameters", tool_data.get("parameters", {}))
-            ast_root.add_child(tool_node)
-        
-        # 创建变量节点
-        for var_data in extraction.get("variables", []):
-            var_node = ASTNode("var", 0, 0)
-            var_node.set_attribute("name", var_data["name"])
-            var_node.set_attribute("value", var_data["value"])
-            var_node.set_attribute("inferred_type", var_data.get("type", "string"))
-            ast_root.add_child(var_node)
-    
-    def _apply_content_enhancement(self, task_node: ASTNode, enhancement: Dict[str, Any]) -> None:
-        """应用内容增强"""
-        # 更新任务描述
-        if enhancement.get("enhanced_description"):
-            # 查找或创建描述节点
-            desc_node = None
-            for child in task_node.children:
-                if child.node_type == "text":
-                    desc_node = child
-                    break
+            # Save DSL code to file
+            with open(filepath, 'w', encoding='utf-8') as f:
+                f.write("# LLM Generated DSL Code\n")
+                f.write(f"# Source: {context.source_file}\n")
+                f.write(f"# Generated at: {datetime.now().isoformat()}\n")
+                f.write(f"# Provider: {self.config.llm_provider}\n")
+                f.write(f"# Model: {self.config.llm_model}\n\n")
+                f.write(dsl_code)
             
-            if not desc_node:
-                desc_node = ASTNode("text", task_node.line, task_node.column)
-                task_node.add_child(desc_node)
-            
-            desc_node.set_attribute("content", enhancement["enhanced_description"])
-        
-        # 添加执行步骤
-        for step in enhancement.get("execution_steps", []):
-            step_node = ASTNode("text", task_node.line, task_node.column)
-            step_node.set_attribute("content", f"步骤: {step}")
-            task_node.add_child(step_node)
-        
-        # 添加注意事项
-        for note in enhancement.get("notes", []):
-            note_node = ASTNode("text", task_node.line, task_node.column)
-            note_node.set_attribute("content", f"注意: {note}")
-            task_node.add_child(note_node)
-    
-    def _validate_augmented_ast(self, ast_root: ASTNode, context: ParseContext) -> None:
-        """验证增强后的 AST"""
-        # 检查是否有重复的任务ID
-        task_ids = set()
-        for task_node in self._find_nodes_by_type(ast_root, "task"):
-            task_id = task_node.get_attribute("id")
-            if task_id:
-                if task_id in task_ids:
-                    raise LLMError(f"LLM 生成了重复的任务ID: {task_id}")
-                task_ids.add(task_id)
-        
-        # 检查是否有重复的工具名
-        tool_names = set()
-        for tool_node in self._find_nodes_by_type(ast_root, "tool"):
-            tool_name = tool_node.get_attribute("name")
-            if tool_name:
-                if tool_name in tool_names:
-                    raise LLMError(f"LLM 生成了重复的工具名: {tool_name}")
-                tool_names.add(tool_name) 
+            if self.config.debug:
+                print(f"中间DSL代码已保存到: {filepath}")
+                
+        except Exception as e:
+            # Don't fail the main process if saving fails
+            if self.config.debug:
+                print(f"保存中间DSL代码失败: {str(e)}") 

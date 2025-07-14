@@ -1,6 +1,6 @@
 """
-DSL 编译器语义分析器
-指令语义检查、默认值补全、跨节点引用解析
+DSL Compiler Semantic Analyzer
+Directive semantic checking, default value completion, cross-node reference resolution
 """
 
 from typing import Dict, List, Set, Any, Optional
@@ -11,7 +11,7 @@ from .exceptions import SemanticError, CompilerError
 
 
 class SemanticAnalyzer:
-    """语义分析器"""
+    """Semantic Analyzer"""
     
     def __init__(self, config: CompilerConfig):
         self.config = config
@@ -24,20 +24,20 @@ class SemanticAnalyzer:
         
     def analyze(self, ast_root: ASTNode, context: ParseContext) -> ASTNode:
         """
-        进行语义分析
+        Perform semantic analysis
         
         Args:
-            ast_root: 根 AST 节点
-            context: 解析上下文
+            ast_root: Root AST node
+            context: Parse context
             
         Returns:
-            ASTNode: 分析后的 AST
+            ASTNode: Analyzed AST
             
         Raises:
-            SemanticError: 语义错误
+            SemanticError: Semantic error
         """
         try:
-            # 清除先前状态
+            # Clear previous state
             self.symbol_table.clear()
             self.task_definitions.clear()
             self.tool_definitions.clear()
@@ -45,22 +45,22 @@ class SemanticAnalyzer:
             self.references.clear()
             self.scopes.clear()
             
-            # 1. 构建符号表
+            # 1. Build symbol table
             self._build_symbol_table(ast_root)
             
-            # 2. 类型检查
+            # 2. Type checking
             self._type_check(ast_root, context)
             
-            # 3. 引用解析
+            # 3. Reference resolution
             self._resolve_references(ast_root, context)
             
-            # 4. 默认值补全
+            # 4. Default value completion
             self._complete_defaults(ast_root, context)
             
-            # 5. 作用域检查
+            # 5. Scope checking
             self._check_scopes(ast_root, context)
             
-            # 6. 语义验证
+            # 6. Semantic validation
             self._validate_semantics(ast_root, context)
             
             return ast_root
@@ -69,15 +69,15 @@ class SemanticAnalyzer:
             if isinstance(e, SemanticError):
                 raise
             else:
-                raise SemanticError(f"语义分析失败: {str(e)}")
+                raise SemanticError(f"Semantic analysis failed: {str(e)}")
     
     def _build_symbol_table(self, node: ASTNode) -> None:
-        """构建符号表"""
+        """Build symbol table"""
         if node.node_type == "task":
             task_id = node.get_attribute("id")
             if task_id:
                 if task_id in self.task_definitions:
-                    raise SemanticError(f"任务 ID 重复定义: {task_id}", 
+                    raise SemanticError(f"Task ID duplicate definition: {task_id}", 
                                       node_id=task_id, line=node.line)
                 self.task_definitions[task_id] = node
                 self.symbol_table[task_id] = {"type": "task", "node": node}
@@ -86,7 +86,7 @@ class SemanticAnalyzer:
             tool_name = node.get_attribute("name")
             if tool_name:
                 if tool_name in self.tool_definitions:
-                    raise SemanticError(f"工具名称重复定义: {tool_name}", 
+                    raise SemanticError(f"Tool name duplicate definition: {tool_name}", 
                                       node_id=tool_name, line=node.line)
                 self.tool_definitions[tool_name] = node
                 self.symbol_table[tool_name] = {"type": "tool", "node": node}
@@ -95,17 +95,17 @@ class SemanticAnalyzer:
             var_name = node.get_attribute("name")
             if var_name:
                 if var_name in self.variable_definitions:
-                    raise SemanticError(f"变量名称重复定义: {var_name}", 
+                    raise SemanticError(f"Variable name duplicate definition: {var_name}", 
                                       node_id=var_name, line=node.line)
                 self.variable_definitions[var_name] = node
                 self.symbol_table[var_name] = {"type": "variable", "node": node}
         
-        # 递归处理子节点
+        # Recursively process child nodes
         for child in node.children:
             self._build_symbol_table(child)
     
     def _type_check(self, node: ASTNode, context: ParseContext) -> None:
-        """类型检查"""
+        """Type checking"""
         if node.node_type == "task":
             self._check_task_type(node, context)
         elif node.node_type == "tool":
@@ -115,22 +115,22 @@ class SemanticAnalyzer:
         elif node.node_type == "if":
             self._check_condition_type(node, context)
         
-        # 递归处理子节点
+        # Recursively process child nodes
         for child in node.children:
             self._type_check(child, context)
     
     def _check_task_type(self, node: ASTNode, context: ParseContext) -> None:
-        """检查任务类型"""
+        """Check task type"""
         task_id = node.get_attribute("id")
         if not task_id:
-            raise SemanticError("任务缺少 ID", line=node.line)
+            raise SemanticError("Task missing ID", line=node.line)
         
-        # 检查任务 ID 格式
+        # Check task ID format
         if not self._is_valid_identifier(task_id):
-            raise SemanticError(f"无效的任务 ID 格式: {task_id}", 
+            raise SemanticError(f"Invalid task ID format: {task_id}", 
                               node_id=task_id, line=node.line)
         
-        # 检查任务体
+        # Check if task has content
         has_content = False
         for child in node.children:
             if child.node_type == "text" and child.get_attribute("content", "").strip():
@@ -138,51 +138,51 @@ class SemanticAnalyzer:
                 break
         
         if not has_content:
-            # 为空任务添加默认内容
+            # Add default content for empty tasks
             node.set_attribute("_has_default_content", True)
     
     def _check_tool_type(self, node: ASTNode, context: ParseContext) -> None:
-        """检查工具类型"""
+        """Check tool type"""
         tool_name = node.get_attribute("name")
         if not tool_name:
-            raise SemanticError("工具缺少名称", line=node.line)
+            raise SemanticError("Tool missing name", line=node.line)
         
-        # 检查工具名称格式
+        # Check tool name format
         if not self._is_valid_identifier(tool_name):
-            raise SemanticError(f"无效的工具名称格式: {tool_name}", 
+            raise SemanticError(f"Invalid tool name format: {tool_name}", 
                               node_id=tool_name, line=node.line)
     
     def _check_variable_type(self, node: ASTNode, context: ParseContext) -> None:
-        """检查变量类型"""
+        """Check variable type"""
         var_name = node.get_attribute("name")
         if not var_name:
-            raise SemanticError("变量缺少名称", line=node.line)
+            raise SemanticError("Variable missing name", line=node.line)
         
-        # 检查变量名称格式
+        # Check variable name format
         if not self._is_valid_identifier(var_name):
-            raise SemanticError(f"无效的变量名称格式: {var_name}", 
+            raise SemanticError(f"Invalid variable name format: {var_name}", 
                               node_id=var_name, line=node.line)
         
-        # 检查变量值
+        # Check variable value
         var_value = node.get_attribute("value")
         if var_value is not None:
-            # 简单的类型推断
+            # Simple type inference
             inferred_type = self._infer_type(var_value)
             node.set_attribute("inferred_type", inferred_type)
     
     def _check_condition_type(self, node: ASTNode, context: ParseContext) -> None:
-        """检查条件类型"""
+        """Check condition type"""
         condition = node.get_attribute("condition")
         if not condition:
-            raise SemanticError("条件表达式为空", line=node.line)
+            raise SemanticError("Condition expression is empty", line=node.line)
         
-        # 简单的条件表达式验证
+        # Simple condition expression validation
         if not self._is_valid_condition(condition):
-            raise SemanticError(f"无效的条件表达式: {condition}", line=node.line)
+            raise SemanticError(f"Invalid condition expression: {condition}", line=node.line)
     
     def _resolve_references(self, node: ASTNode, context: ParseContext) -> None:
-        """解析引用"""
-        # 收集引用
+        """Resolve references"""
+        # Collect references
         if node.node_type == "text":
             content = node.get_attribute("content", "")
             refs = self._extract_references(content)
@@ -191,25 +191,25 @@ class SemanticAnalyzer:
                     self.references[ref] = []
                 self.references[ref].append(node)
         
-        # 递归处理子节点
+        # Recursively process child nodes
         for child in node.children:
             self._resolve_references(child, context)
         
-        # 验证引用
+        # Validate references
         self._validate_references(context)
     
     def _validate_references(self, context: ParseContext) -> None:
-        """验证引用的有效性"""
+        """Validate reference validity"""
         for ref_name, ref_nodes in self.references.items():
             if ref_name not in self.symbol_table:
-                # 检查是否是内置引用
+                # Check if it's a built-in reference
                 if not self._is_builtin_reference(ref_name):
                     for ref_node in ref_nodes:
-                        raise SemanticError(f"未定义的引用: {ref_name}", 
+                        raise SemanticError(f"Undefined reference: {ref_name}", 
                                           node_id=ref_name, line=ref_node.line)
     
     def _complete_defaults(self, node: ASTNode, context: ParseContext) -> None:
-        """补全默认值"""
+        """Complete default values"""
         if node.node_type == "task":
             self._complete_task_defaults(node, context)
         elif node.node_type == "tool":
@@ -217,117 +217,117 @@ class SemanticAnalyzer:
         elif node.node_type == "var":
             self._complete_variable_defaults(node, context)
         
-        # 递归处理子节点
+        # Recursively process child nodes
         for child in node.children:
             self._complete_defaults(child, context)
     
     def _complete_task_defaults(self, node: ASTNode, context: ParseContext) -> None:
-        """补全任务默认值"""
-        # 如果任务没有标题，使用 ID 作为标题
+        """Complete task default values"""
+        # If task has no title, use ID as title
         if not node.get_attribute("title"):
             task_id = node.get_attribute("id")
             if task_id:
                 node.set_attribute("title", task_id.replace("_", " ").title())
         
-        # 如果任务没有内容，添加默认内容
+        # If task has no content, add default content
         if node.get_attribute("_has_default_content"):
             from .parser import ASTNode as ParserASTNode
             default_content = ParserASTNode("text", node.line, node.column)
-            default_content.set_attribute("content", f"执行任务: {node.get_attribute('title')}")
+            default_content.set_attribute("content", f"Execute task: {node.get_attribute('title')}")
             node.add_child(default_content)
     
     def _complete_tool_defaults(self, node: ASTNode, context: ParseContext) -> None:
-        """补全工具默认值"""
-        # 如果工具没有描述，使用名称作为描述
+        """Complete tool default values"""
+        # If tool has no description, use name as description
         if not node.get_attribute("description"):
             tool_name = node.get_attribute("name")
             if tool_name:
-                node.set_attribute("description", f"工具: {tool_name}")
+                node.set_attribute("description", f"Tool: {tool_name}")
     
     def _complete_variable_defaults(self, node: ASTNode, context: ParseContext) -> None:
-        """补全变量默认值"""
-        # 如果变量没有值，设置为 None
+        """Complete variable default values"""
+        # If variable has no value, set to None
         if node.get_attribute("value") is None:
             node.set_attribute("value", None)
             node.set_attribute("inferred_type", "none")
     
     def _check_scopes(self, node: ASTNode, context: ParseContext) -> None:
-        """检查作用域"""
-        # 进入新作用域
+        """Check scopes"""
+        # Enter new scope
         if node.node_type in ["task", "tool", "if", "else"]:
             self.scopes.append({})
         
-        # 处理当前节点
+        # Process current node
         if node.node_type == "var":
             var_name = node.get_attribute("name")
             if var_name and self.scopes:
-                # 检查当前作用域是否已定义
+                # Check if already defined in current scope
                 if var_name in self.scopes[-1]:
-                    raise SemanticError(f"变量在当前作用域重复定义: {var_name}", 
+                    raise SemanticError(f"Variable redefined in current scope: {var_name}", 
                                       node_id=var_name, line=node.line)
                 self.scopes[-1][var_name] = node
         
-        # 递归处理子节点
+        # Recursively process child nodes
         for child in node.children:
             self._check_scopes(child, context)
         
-        # 退出作用域
+        # Exit scope
         if node.node_type in ["task", "tool", "if", "else"]:
             self.scopes.pop()
     
     def _validate_semantics(self, node: ASTNode, context: ParseContext) -> None:
-        """语义验证"""
-        # 检查条件块匹配
+        """Semantic validation"""
+        # Check conditional block matching
         if node.node_type == "if":
             self._validate_conditional_block(node, context)
         
-        # 检查任务流
+        # Check task flow
         if node.node_type == "task":
             self._validate_task_flow(node, context)
         
-        # 递归处理子节点
+        # Recursively process child nodes
         for child in node.children:
             self._validate_semantics(child, context)
     
     def _validate_conditional_block(self, node: ASTNode, context: ParseContext) -> None:
-        """验证条件块"""
-        # 检查是否有匹配的 endif
-        # 这里需要在父节点层面检查，简化实现
+        """Validate conditional block"""
+        # Check for matching endif
+        # This needs to be checked at parent node level, simplified implementation
         pass
     
     def _validate_task_flow(self, node: ASTNode, context: ParseContext) -> None:
-        """验证任务流"""
-        # 检查任务是否有循环引用
+        """Validate task flow"""
+        # Check for circular references in tasks
         task_id = node.get_attribute("id")
         if task_id:
             self._check_circular_references(task_id, set(), context)
     
     def _check_circular_references(self, task_id: str, visited: Set[str], context: ParseContext) -> None:
-        """检查循环引用"""
+        """Check circular references"""
         if task_id in visited:
-            raise SemanticError(f"检测到循环引用: {task_id}", node_id=task_id)
+            raise SemanticError(f"Circular reference detected: {task_id}", node_id=task_id)
         
         visited.add(task_id)
         
-        # 检查任务的依赖
+        # Check task dependencies
         if task_id in self.task_definitions:
             task_node = self.task_definitions[task_id]
-            # 这里需要根据实际的依赖关系检查
-            # 简化实现，暂时跳过
+            # This needs to check actual dependency relationships
+            # Simplified implementation, temporarily skip
         
         visited.remove(task_id)
     
     def _is_valid_identifier(self, name: str) -> bool:
-        """检查是否是有效的标识符"""
+        """Check if it's a valid identifier"""
         import re
         return bool(re.match(r'^[a-zA-Z_][a-zA-Z0-9_]*$', name))
     
     def _infer_type(self, value: Any) -> str:
-        """推断类型"""
+        """Infer type"""
         if value is None:
             return "none"
         
-        # 如果已经是具体类型，直接返回
+        # If already a concrete type, return directly
         if isinstance(value, bool):
             return "boolean"
         elif isinstance(value, int):
@@ -339,15 +339,15 @@ class SemanticAnalyzer:
         elif isinstance(value, dict):
             return "object"
         
-        # 处理字符串类型的值
+        # Handle string-type values
         if isinstance(value, str):
             value = value.strip()
             
-            # 布尔值
+            # Boolean values
             if value.lower() in ["true", "false"]:
                 return "boolean"
             
-            # 数字
+            # Numbers
             try:
                 if '.' in value:
                     float(value)
@@ -358,16 +358,16 @@ class SemanticAnalyzer:
             except ValueError:
                 pass
         
-        # 默认字符串
+        # Default string
         return "string"
     
     def _is_valid_condition(self, condition: str) -> bool:
-        """检查条件表达式是否有效"""
-        # 简单的条件表达式验证
+        """Check if condition expression is valid"""
+        # Simple condition expression validation
         if not condition.strip():
             return False
         
-        # 检查是否包含危险字符
+        # Check for dangerous characters
         dangerous_chars = [';', '&', '|', '`', '$']
         for char in dangerous_chars:
             if char in condition:
@@ -376,34 +376,34 @@ class SemanticAnalyzer:
         return True
     
     def _extract_references(self, content: str) -> List[str]:
-        """提取文本中的引用"""
+        """Extract references from text"""
         import re
-        # 查找形如 ${variable} 或 @{task_id} 的引用
+        # Find references like ${variable} or @{task_id}
         pattern = r'[@$]\{([a-zA-Z_][a-zA-Z0-9_]*)\}'
         matches = re.findall(pattern, content)
         return matches
     
     def _is_builtin_reference(self, ref_name: str) -> bool:
-        """检查是否是内置引用"""
+        """Check if it's a built-in reference"""
         builtin_refs = ["env", "config", "context", "result", "input", "output"]
         return ref_name in builtin_refs
     
     def get_symbol_table(self) -> Dict[str, Any]:
-        """获取符号表"""
+        """Get symbol table"""
         return self.symbol_table.copy()
     
     def get_task_definitions(self) -> Dict[str, ASTNode]:
-        """获取任务定义"""
+        """Get task definitions"""
         return self.task_definitions.copy()
     
     def get_tool_definitions(self) -> Dict[str, ASTNode]:
-        """获取工具定义"""
+        """Get tool definitions"""
         return self.tool_definitions.copy()
     
     def get_variable_definitions(self) -> Dict[str, ASTNode]:
-        """获取变量定义"""
+        """Get variable definitions"""
         return self.variable_definitions.copy()
     
     def get_references(self) -> Dict[str, List[ASTNode]]:
-        """获取引用信息"""
+        """Get reference information"""
         return self.references.copy() 

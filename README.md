@@ -465,9 +465,33 @@ MIT License
 
 ## Changelog
 
-### v1.0.0
-- Initial release
-- Multi-format output support
-- LLM integration
-- Comprehensive validation
-- CLI and library interfaces 
+### v0.1.0 (2024-12-19)
+
+#### 🚀 Major Updates
+- **Complete LLM Augmentor Refactoring**: Transformed from complex JSON structure analysis to direct DSL code output, significantly simplifying the processing pipeline
+- **Critical Error Fix**: Resolved the "Expecting value: line 1 column 1 (char 0)" error in LLM response parsing
+- **Direct Natural Language to DSL Conversion**: Implemented complete natural language content detection and conversion workflow
+
+#### ✨ New Features
+- **Intelligent Content Detection**: Automatically identifies natural language content that requires LLM enhancement
+- **Multi-LLM Provider Support**: Enhanced integration with DashScope (Alibaba Cloud) and OpenAI APIs
+- **Response Cleaning Mechanism**: Added Markdown code block cleaning and JSON extraction functionality
+- **Usage Examples and Documentation**: Added `example_llm_usage.py` comprehensive usage guide
+
+#### 🛠️ Improvements
+- **Enhanced Error Handling**: Added response validation, fallback mechanisms, and detailed error information
+- **Code Extraction Logic**: Implemented algorithm for accurately extracting DSL code from LLM responses
+- **Re-parsing Workflow**: Generated DSL code is reprocessed through the complete compiler pipeline
+- **Configuration Validation**: Strengthened LLM configuration validation and error handling
+
+#### 🐛 Bug Fixes
+- Fixed JSON parsing failures causing compilation interruption
+- Resolved null value handling issues in natural language detection logic
+- Fixed parsing errors caused by inconsistent LLM response formats
+- Improved node handling logic in AST structure conversion
+
+#### 📖 Documentation Updates
+- Updated LLM integration usage instructions and configuration examples
+- Added complete configuration guides for DashScope and OpenAI
+- Provided practical examples of natural language to DSL conversion
+- Enhanced troubleshooting and debugging guides

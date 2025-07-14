@@ -1,6 +1,6 @@
 """
-DSL 编译器词法分析器
-生成 Token 流 (DirectiveToken / TextToken)
+DSL Compiler Lexical Analyzer
+Generates Token stream (DirectiveToken / TextToken)
 """
 
 import re
@@ -11,30 +11,30 @@ from .exceptions import ParseError, CompilerError
 
 
 class Lexer:
-    """词法分析器"""
+    """Lexical Analyzer"""
     
     def __init__(self, config: CompilerConfig):
         self.config = config
         
-        # 定义 token 类型的正则表达式
+        # Define regex patterns for token types
         self.token_patterns = [
-            # 指令 token
+            # Directive tokens
             ('DIRECTIVE', r'^\s*@(task|tool|var|if|else|endif|include|agent|lang|next)(?:\s+(.*))?$'),
-            # 代码块标记
+            # Code block markers
             ('CODE_BLOCK_START', r'^\s*```(\w+)?$'),
             ('CODE_BLOCK_END', r'^\s*```$'),
-            # 注释
+            # Comments
             ('COMMENT', r'^\s*#.*$'),
-            # 空行
+            # Empty lines
             ('EMPTY_LINE', r'^\s*$'),
-            # 普通文本
+            # Plain text
             ('TEXT', r'^.*$'),
         ]
         
-        # 编译正则表达式
+        # Compile regex patterns
         self.compiled_patterns = [(name, re.compile(pattern)) for name, pattern in self.token_patterns]
         
-        # 指令参数解析器
+        # Directive parameter parsers
         self.directive_parsers = {
             'task': self._parse_task_directive,
             'tool': self._parse_tool_directive,
@@ -50,23 +50,23 @@ class Lexer:
     
     def tokenize(self, content: str, context: ParseContext) -> List[Token]:
         """
-        将内容分词为 Token 流
+        Tokenize content into Token stream
         
         Args:
-            content: 预处理后的内容
-            context: 解析上下文
+            content: Preprocessed content
+            context: Parse context
             
         Returns:
-            List[Token]: Token 列表
+            List[Token]: Token list
             
         Raises:
-            ParseError: 词法分析错误
+            ParseError: Lexical analysis error
         """
         tokens = []
         lines = content.split('\n')
         
         current_line = 1
-        indent_stack = [0]  # 缩进栈
+        indent_stack = [0]  # Indentation stack
         in_code_block = False
         code_block_lang = None
         
@@ -75,7 +75,7 @@ class Lexer:
             context.current_column = 1
             
             try:
-                # 处理代码块
+                # Handle code blocks
                 if in_code_block:
                     if self._is_code_block_end(line):
                         tokens.append(Token(
@@ -95,7 +95,7 @@ class Lexer:
                         ))
                     continue
                 
-                # 检查代码块开始
+                # Check code block start
                 if self._is_code_block_start(line):
                     match = re.match(r'^\s*```(\w+)?$', line)
                     if match:
@@ -109,11 +109,11 @@ class Lexer:
                         in_code_block = True
                         continue
                 
-                # 处理缩进
+                # Handle indentation
                 indent_level = len(line) - len(line.lstrip())
                 
-                # 生成缩进/反缩进 token
-                if line.strip():  # 非空行
+                # Generate indent/dedent tokens
+                if line.strip():  # Non-empty lines
                     while indent_level > indent_stack[-1]:
                         indent_stack.append(indent_level)
                         tokens.append(Token(
@@ -132,11 +132,11 @@ class Lexer:
                             column=1
                         ))
                 
-                # 匹配 token 类型
+                # Match token type
                 token_type, token_value = self._match_line(line, line_num)
                 
                 if token_type:
-                    # 确保 token_type 是正确的类型
+                    # Ensure token_type is correct type
                     valid_types = ["directive", "text", "indent", "dedent", "newline", "eof"]
                     if token_type not in valid_types:
                         token_type = "text"
@@ -148,7 +148,7 @@ class Lexer:
                         column=1
                     ))
                 
-                # 添加换行符 token
+                # Add newline token
                 if line_num < len(lines):
                     tokens.append(Token(
                         type="newline",
@@ -159,12 +159,12 @@ class Lexer:
                 
             except Exception as e:
                 raise ParseError(
-                    f"词法分析错误: {str(e)}",
+                    f"Lexical analysis error: {str(e)}",
                     line=line_num,
                     source_file=context.source_file
                 )
         
-        # 处理剩余的缩进
+        # Handle remaining indentation
         while len(indent_stack) > 1:
             indent_stack.pop()
             tokens.append(Token(
@@ -174,7 +174,7 @@ class Lexer:
                 column=1
             ))
         
-        # 添加 EOF token
+        # Add EOF token
         tokens.append(Token(
             type="eof",
             value="",
@@ -185,14 +185,14 @@ class Lexer:
         return tokens
     
     def _match_line(self, line: str, line_num: int) -> Tuple[str, str]:
-        """匹配行的 token 类型"""
+        """Match line token type"""
         for token_type, pattern in self.compiled_patterns:
             match = pattern.match(line)
             if match:
                 if token_type == 'DIRECTIVE':
                     return "directive", line.strip()
                 elif token_type == 'COMMENT':
-                    return "text", line.strip()  # 注释作为文本处理
+                    return "text", line.strip()  # Treat comments as text
                 elif token_type == 'EMPTY_LINE':
                     return "text", ""
                 elif token_type == 'TEXT':
@@ -203,15 +203,15 @@ class Lexer:
         return "text", line
     
     def _is_code_block_start(self, line: str) -> bool:
-        """检查是否是代码块开始"""
+        """Check if line is code block start"""
         return bool(re.match(r'^\s*```(\w+)?$', line))
     
     def _is_code_block_end(self, line: str) -> bool:
-        """检查是否是代码块结束"""
+        """Check if line is code block end"""
         return bool(re.match(r'^\s*```$', line))
     
     def _parse_task_directive(self, directive_text: str) -> dict:
-        """解析 @task 指令"""
+        """Parse @task directive"""
         # @task [id] [title]
         parts = directive_text.split(None, 2)
         
@@ -224,7 +224,7 @@ class Lexer:
         return result
     
     def _parse_tool_directive(self, directive_text: str) -> dict:
-        """解析 @tool 指令"""
+        """Parse @tool directive"""
         # @tool [name] [description]
         parts = directive_text.split(None, 2)
         
@@ -237,7 +237,7 @@ class Lexer:
         return result
     
     def _parse_var_directive(self, directive_text: str) -> dict:
-        """解析 @var 指令"""
+        """Parse @var directive"""
         # @var name = value
         parts = directive_text.split(None, 1)
         
@@ -254,7 +254,7 @@ class Lexer:
         return result
     
     def _parse_if_directive(self, directive_text: str) -> dict:
-        """解析 @if 指令"""
+        """Parse @if directive"""
         # @if condition
         parts = directive_text.split(None, 1)
         
@@ -265,15 +265,15 @@ class Lexer:
         return result
     
     def _parse_else_directive(self, directive_text: str) -> dict:
-        """解析 @else 指令"""
+        """Parse @else directive"""
         return {'type': 'else'}
     
     def _parse_endif_directive(self, directive_text: str) -> dict:
-        """解析 @endif 指令"""
+        """Parse @endif directive"""
         return {'type': 'endif'}
     
     def _parse_include_directive(self, directive_text: str) -> dict:
-        """解析 @include 指令"""
+        """Parse @include directive"""
         # @include file_path
         parts = directive_text.split(None, 1)
         
@@ -284,11 +284,11 @@ class Lexer:
         return result
     
     def _parse_agent_directive(self, directive_text: str) -> dict:
-        """解析 @agent 指令"""
+        """Parse @agent directive"""
         # @agent AgentName(param1=value1, param2=value2)
         import re
         
-        # 匹配 agent 名称和参数
+        # Match agent name and parameters
         match = re.match(r'^\s*@agent\s+(\w+)(?:\((.*)\))?', directive_text)
         result = {'type': 'agent'}
         
@@ -300,7 +300,7 @@ class Lexer:
         return result
     
     def _parse_lang_directive(self, directive_text: str) -> dict:
-        """解析 @lang 指令"""
+        """Parse @lang directive"""
         # @lang en-US
         parts = directive_text.split(None, 1)
         
@@ -311,7 +311,7 @@ class Lexer:
         return result
     
     def _parse_next_directive(self, directive_text: str) -> dict:
-        """解析 @next 指令"""
+        """Parse @next directive"""
         # @next TaskName
         parts = directive_text.split(None, 1)
         
@@ -322,26 +322,26 @@ class Lexer:
         return result
     
     def parse_directive(self, directive_text: str) -> dict:
-        """解析指令内容"""
-        # 提取指令类型
+        """Parse directive content"""
+        # Extract directive type
         match = re.match(r'^\s*@(\w+)', directive_text)
         if not match:
-            raise ParseError(f"无效的指令格式: {directive_text}")
+            raise ParseError(f"Invalid directive format: {directive_text}")
         
         directive_type = match.group(1)
         
-        # 使用对应的解析器
+        # Use corresponding parser
         if directive_type in self.directive_parsers:
             return self.directive_parsers[directive_type](directive_text)
         else:
-            raise ParseError(f"不支持的指令类型: {directive_type}")
+            raise ParseError(f"Unsupported directive type: {directive_type}")
     
     def tokenize_expression(self, expression: str) -> List[Token]:
-        """为表达式分词（用于条件表达式等）"""
+        """Tokenize expression (for conditional expressions, etc.)"""
         tokens = []
         
-        # 简单的表达式分词
-        # 这里可以根据需要实现更复杂的表达式解析
+        # Simple expression tokenization
+        # More complex expression parsing can be implemented here as needed
         operators = ['==', '!=', '<=', '>=', '<', '>', '&&', '||', '!']
         
         i = 0
@@ -362,7 +362,7 @@ class Lexer:
                 i += 1
                 continue
             
-            # 检查操作符
+            # Check operators
             found_operator = False
             for op in operators:
                 if expression[i:i+len(op)] == op:
@@ -390,7 +390,7 @@ class Lexer:
                 current_token += char
                 i += 1
         
-        # 处理最后一个 token
+        # Handle last token
         if current_token:
             tokens.append(Token(
                 type="text",
@@ -402,7 +402,7 @@ class Lexer:
         return tokens
     
     def get_token_statistics(self, tokens: List[Token]) -> dict:
-        """获取 token 统计信息"""
+        """Get token statistics"""
         stats = {
             'total_tokens': len(tokens),
             'directive_tokens': 0,
