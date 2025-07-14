@@ -16,14 +16,29 @@ A powerful compiler that converts human-readable text into structured DSL (Domai
 
 ## Quick Start
 
+### Prerequisites
+
+- Python 3.12+
+- [uv](https://docs.astral.sh/uv/) package manager
+
 ### Installation
 
 ```bash
-# Install from requirements
-pip install -r requirements.txt
+# Install uv if you haven't already
+curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# Or install individual dependencies
-pip install pydantic ruamel.yaml typer rich aiohttp python-dotenv
+# Clone the repository
+git clone https://github.com/supercontext/dsl-compiler.git
+cd dsl-compiler
+
+# Install dependencies and create virtual environment
+uv sync
+
+# Activate the virtual environment
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+
+# Install in development mode
+uv pip install -e .
 ```
 
 ### Basic Usage
@@ -62,19 +77,22 @@ result = compile(source_code, config)
 
 ```bash
 # Basic compilation
-python -m dsl_compiler.cli input.txt -o output.yaml
+uv run dslc input.txt -o output.yaml
 
 # Different output formats
-python -m dsl_compiler.cli input.txt -f json -o output.json
+uv run dslc input.txt -f json -o output.json
 
 # Disable LLM for faster processing
-python -m dsl_compiler.cli input.txt --no-llm
+uv run dslc input.txt --no-llm
 
 # Syntax validation only
-python -m dsl_compiler.cli validate input.txt
+uv run dslc validate input.txt
 
 # Show configuration
-python -m dsl_compiler.cli config --show
+uv run dslc config --show
+
+# Or use the traditional Python module syntax
+uv run python -m dsl_compiler.cli input.txt -o output.yaml
 ```
 
 ## Syntax Guide

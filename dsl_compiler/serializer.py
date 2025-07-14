@@ -138,7 +138,7 @@ class Serializer:
             
             elif child.node_type == "tool":
                 # 创建结构化的工具调用块
-                from src.dsl_compiler.models import ToolCall
+                from .models import ToolCall
                 tool_name = child.get_attribute("name", "")
                 tool_desc = child.get_attribute("description", "")
                 
@@ -156,7 +156,7 @@ class Serializer:
             
             elif child.node_type == "agent":
                 # 创建结构化的Agent调用块
-                from src.dsl_compiler.models import AgentCall
+                from .models import AgentCall
                 agent_name = child.get_attribute("name", "")
                 agent_params = child.get_attribute("parameters", "")
                 
@@ -174,7 +174,7 @@ class Serializer:
             
             elif child.node_type == "next":
                 # 创建结构化的跳转块
-                from src.dsl_compiler.models import JumpAction
+                from .models import JumpAction
                 target = child.get_attribute("target", "")
                 
                 jump_action = JumpAction(target=target)
@@ -214,7 +214,7 @@ class Serializer:
         if start_index >= len(children) or children[start_index].node_type != "if":
             return None, 0
         
-        from src.dsl_compiler.models import ConditionalStatement, ConditionalBranch
+        from .models import ConditionalStatement, ConditionalBranch
         
         branches = []
         current_index = start_index
@@ -257,7 +257,7 @@ class Serializer:
     
     def _extract_conditional_actions(self, conditional_node: ASTNode) -> List:
         """从条件节点中提取动作列表"""
-        from src.dsl_compiler.models import ConditionalAction, ToolCall, AgentCall, JumpAction
+        from .models import ConditionalAction, ToolCall, AgentCall, JumpAction
         
         actions = []
         

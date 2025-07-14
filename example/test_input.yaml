@@ -1,0 +1,107 @@
+metadata:
+  directive_count: 17
+  directive_types:
+  - var
+  - task
+  - tool
+  - if
+  - next
+  - else
+  - lang
+  - agent
+  source_file: example/test_input.txt
+  compiled_at: '2025-07-14T15:10:41.780685'
+variables:
+- name: threshold
+  value: 100
+  type: integer
+  scope: global
+tasks:
+- id: T1
+  title: 检查订单有效性
+  body:
+  - type: tool_call
+    line_number: 5
+    tool_call:
+      name: check_order
+      description: 检查订单有效性的工具
+  - type: text
+    content: 订单号：{{order_id}}。
+    line_number: 4
+  - type: conditional
+    line_number: 6
+    conditional:
+      branches:
+      - condition: result.valid == false
+        actions:
+        - type: text
+          content: 订单无效，终止流程。
+        - type: jump
+          jump:
+            target: END
+      - actions:
+        - type: jump
+          jump:
+            target: T2
+      line_number: 6
+- id: T2
+  title: Validate Payment
+  body:
+  - type: text
+    content: Verify if payment amount exceeds threshold.
+    line_number: 14
+  - type: text
+    content: Payment is acceptable.
+    line_number: 17
+  - type: directive
+    content: '@lang en-US'
+    line_number: 13
+  - type: conditional
+    line_number: 15
+    conditional:
+      branches:
+      - condition: '{{payment_amount}} > @var threshold'
+        actions:
+        - type: agent_call
+          agent_call:
+            name: RiskAssessmentAgent
+            parameters: order_id={{order_id}}
+      line_number: 15
+  - type: next_action
+    line_number: 18
+    next_action:
+      target: T3
+  next:
+  - T3
+- id: T3
+  title: 发送确认邮件
+  body:
+  - type: tool_call
+    line_number: 22
+    tool_call:
+      name: send_email
+      description: 发送确认邮件的工具
+  - type: text
+    content: 感谢您的购买！
+    line_number: 21
+  - type: next_action
+    line_number: 23
+    next_action:
+      target: END
+  next:
+  - END
+- id: END
+  title: 结束
+  body:
+  - type: tool_call
+    line_number: 27
+    tool_call:
+      name: log_finish
+      description: 记录流程完成日志
+  - type: text
+    content: 流程结束，写入日志。
+    line_number: 26
+entry_point: T1
+compiled_at: 2025-07-14 15:10:41.780688
+source_files:
+- example/test_input.txt

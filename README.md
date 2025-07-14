@@ -16,15 +16,43 @@ A powerful compiler that converts human-readable text into structured DSL (Domai
 
 ## Quick Start
 
+### Prerequisites
+
+- Python 3.12+
+- [uv](https://docs.astral.sh/uv/) package manager
+
 ### Installation
 
 ```bash
-# Install from requirements
-pip install -r requirements.txt
+# Install uv if you haven't already
+curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# Or install individual dependencies
-pip install pydantic ruamel.yaml typer rich aiohttp python-dotenv
+# Clone the repository
+git clone https://github.com/otoTree/human-text.git
+cd human-text
+
+# Install dependencies and create virtual environment
+# 项目已配置国内镜像源，中国大陆用户可享受更快的下载速度
+uv sync
+
+# Activate the virtual environment
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+
+# Install in development mode
+uv pip install -e .
 ```
+
+#### 国内镜像源配置
+
+项目已内置国内镜像源配置（`pyproject.toml` 中的 `[tool.uv]` 部分），支持以下镜像：
+
+- **清华大学镜像**（主要）：https://pypi.tuna.tsinghua.edu.cn/simple
+- **阿里云镜像**：https://mirrors.aliyun.com/pypi/simple/
+- **腾讯云镜像**：https://mirrors.cloud.tencent.com/pypi/simple/
+- **百度镜像**：https://mirror.baidu.com/pypi/simple/
+- **豆瓣镜像**：https://pypi.douban.com/simple/
+
+如需自定义镜像源，可以修改 `pyproject.toml` 中的 `[tool.uv]` 部分，或在用户目录创建 `~/.config/uv/uv.toml`。
 
 ### Basic Usage
 
@@ -62,19 +90,22 @@ result = compile(source_code, config)
 
 ```bash
 # Basic compilation
-python -m dsl_compiler.cli input.txt -o output.yaml
+uv run dslc input.txt -o output.yaml
 
 # Different output formats
-python -m dsl_compiler.cli input.txt -f json -o output.json
+uv run dslc input.txt -f json -o output.json
 
 # Disable LLM for faster processing
-python -m dsl_compiler.cli input.txt --no-llm
+uv run dslc input.txt --no-llm
 
 # Syntax validation only
-python -m dsl_compiler.cli validate input.txt
+uv run dslc validate input.txt
 
 # Show configuration
-python -m dsl_compiler.cli config --show
+uv run dslc config --show
+
+# Or use the traditional Python module syntax
+uv run python -m dsl_compiler.cli input.txt -o output.yaml
 ```
 
 ## Syntax Guide

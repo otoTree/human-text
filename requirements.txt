@@ -1,6 +1,3 @@
-# DSL Compiler Dependencies
-
-# Core dependencies
 pydantic>=2.0.0              # Data validation and serialization
 ruamel.yaml>=0.17.0          # YAML processing with comments preservation
 python-dotenv>=1.0.0         # Environment variable loading

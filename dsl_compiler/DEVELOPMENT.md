@@ -6,39 +6,62 @@ This guide covers how to develop, test, and contribute to the Human-Text DSL Com
 
 ### Prerequisites
 
-- Python 3.8 or higher
+- Python 3.12+
 - Git
-- Virtual environment (recommended)
+- [uv](https://docs.astral.sh/uv/) package manager
 
 ### Environment Setup
 
 ```bash
+# Install uv if you haven't already
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
 # Clone the repository
 git clone https://github.com/supercontext/dsl-compiler.git
 cd dsl-compiler
 
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+# Create virtual environment and install dependencies
+uv sync
+
+# Activate the virtual environment
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 
 # Install in development mode
-pip install -e .
+uv pip install -e .
 
-# Install development dependencies
-pip install -r requirements.txt
-pip install -e ".[dev]"
+# Install pre-commit hooks
+uv run pre-commit install
 ```
 
 ### Development Dependencies
 
-```bash
-# Core development tools
-pip install pytest pytest-asyncio pytest-cov
-pip install black flake8 mypy
-pip install pre-commit
+All development dependencies are automatically installed with `uv sync`. The main development tools include:
 
-# Optional documentation tools
-pip install sphinx sphinx-rtd-theme
+- pytest, pytest-asyncio, pytest-cov (testing)
+- black, ruff (code formatting and linting)
+- mypy (type checking)
+- pre-commit (git hooks)
+- sphinx, sphinx-rtd-theme (documentation)
+
+### Working with uv
+
+```bash
+# Add a new dependency
+uv add package-name
+
+# Add a development dependency
+uv add --dev package-name
+
+# Remove a dependency
+uv remove package-name
+
+# Update all dependencies
+uv sync --upgrade
+
+# Run commands in the virtual environment
+uv run python script.py
+uv run pytest
+uv run black .
 ```
 
 ## Code Structure

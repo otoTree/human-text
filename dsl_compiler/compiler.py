@@ -55,7 +55,8 @@ def compile(
     
     # Validate configuration
     try:
-        config.validate_llm_config()
+        if config.llm_enabled:
+            config.validate_llm_config()
     except ValueError as e:
         raise ConfigurationError(str(e))
     
