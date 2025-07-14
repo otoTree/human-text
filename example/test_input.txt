@@ -1,0 +1,27 @@
+@var threshold = 100
+
+@task T1 检查订单有效性
+    订单号：{{order_id}}。
+    @tool check_order 检查订单有效性的工具
+    @if result.valid == false
+        订单无效，终止流程。
+        @next END
+    @else
+        @next T2
+
+@task T2 Validate Payment
+    @lang en-US
+    Verify if payment amount exceeds threshold.
+    @if {{payment_amount}} > @var threshold
+        @agent RiskAssessmentAgent(order_id={{order_id}})
+    Payment is acceptable.
+    @next T3
+
+@task T3 发送确认邮件
+    感谢您的购买！
+    @tool send_email 发送确认邮件的工具
+    @next END
+
+@task END 结束
+    流程结束，写入日志。
+    @tool log_finish 记录流程完成日志
