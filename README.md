@@ -447,6 +447,18 @@ export DSL_DEBUG=true
 5. Run the test suite
 6. Submit a pull request
 
+## 📚 Documentation
+
+Complete documentation is available in the [`doc/`](doc/) directory:
+
+- **[📖 Documentation Index](doc/INDEX.md)** - Complete documentation overview
+- **[🚀 Development Guide](doc/DEVELOPMENT.md)** - Setup, tools, and development workflow
+- **[🔄 Migration Summary](doc/MIGRATION_SUMMARY.md)** - Project modernization history
+- **[⚙️ Configuration Guide](doc/MIRROR_CONFIG.md)** - Mirror sources and network optimization
+- **[🔧 Architecture Docs](doc/dsl_compiler_README.md)** - Compiler internals and API reference
+
+For quick start, see the sections above. For detailed development information, visit the [documentation directory](doc/).
+
 ## License
 
 MIT License

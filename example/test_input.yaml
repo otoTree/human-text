@@ -10,7 +10,7 @@ metadata:
   - lang
   - agent
   source_file: example/test_input.txt
-  compiled_at: '2025-07-14T15:10:41.780685'
+  compiled_at: '2025-07-14T15:16:23.969815'
 variables:
 - name: threshold
   value: 100
@@ -102,6 +102,6 @@ tasks:
     content: 流程结束，写入日志。
     line_number: 26
 entry_point: T1
-compiled_at: 2025-07-14 15:10:41.780688
+compiled_at: 2025-07-14 15:16:23.969818
 source_files:
 - example/test_input.txt
