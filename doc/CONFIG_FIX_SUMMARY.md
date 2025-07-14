@@ -1,6 +1,6 @@
-# 配置修复总结
+# Configuration Fix Summary
 
-## 问题描述
+## Issue Description
 
 在初始的 uv 迁移过程中，遇到了 `uv.toml` 配置文件解析错误：
 
@@ -13,23 +13,23 @@ error: Failed to parse: `uv.toml`
 unknown field `tool`, expected one of `required-version`, `native-tls`
 ```
 
-## 问题根因
+## Issue Root Cause
 
-1. **配置格式错误**：在 `uv.toml` 文件中错误地使用了 `[tool.uv]` 格式，这是 `pyproject.toml` 的格式，而不是 `uv.toml` 的格式
-2. **配置冲突**：同时存在 `uv.toml` 文件和 `pyproject.toml` 中的 `[tool.uv]` 部分，导致 uv 发出警告
+1. **Configuration Format Error**：Incorrectly used `[tool.uv]` format in the `uv.toml` file, which is the format of `pyproject.toml`, not the format of `uv.toml`
+2. **Configuration Conflict**：Simultaneously exist `uv.toml` file and `[tool.uv]` part in `pyproject.toml`, causing uv to emit warnings
 
-## 解决方案
+## Solutions
 
-### 1. 配置合并
-- 将 `uv.toml` 中的镜像源配置迁移到 `pyproject.toml` 的 `[tool.uv]` 部分
-- 保留原有的开发依赖配置
-- 删除独立的 `uv.toml` 文件
+### 1. Configuration Merging
+- Migrate mirror source configuration from `uv.toml` to `[tool.uv]` part of `pyproject.toml`
+- Retain original development dependency configuration
+- Delete independent `uv.toml` file
 
-### 2. 最终配置结构
-在 `pyproject.toml` 中的 `[tool.uv]` 部分包含：
+### 2. Final Configuration Structure
+In the `[tool.uv]` part of `pyproject.toml`, it includes:
 ```toml
 [tool.uv]
-# 配置国内镜像源以提高下载速度
+# Configure domestic mirror source for faster download
 index-url = "https://pypi.tuna.tsinghua.edu.cn/simple"
 extra-index-url = [
     "https://mirrors.aliyun.com/pypi/simple/",
@@ -38,48 +38,48 @@ extra-index-url = [
     "https://pypi.douban.com/simple/",
 ]
 
-# 并发设置
+# Concurrent settings
 concurrent-downloads = 8
 concurrent-builds = 4
 concurrent-installs = 4
 
 dev-dependencies = [
-    # ... 开发依赖列表
+    # ... Development dependency list
 ]
 ```
 
-### 3. 测试脚本修复
-- 更新检查逻辑：从检查 `uv.toml` 文件改为检查 `pyproject.toml` 中的 `[tool.uv]` 配置
-- 修复 Python 环境：从使用系统 Python 改为使用 `uv run python`
-- 更新 CLI 命令：从 `python3 -m dsl_compiler.cli` 改为 `uv run dslc`
+### 3. Test Script Fix
+- Update check logic: from checking `uv.toml` file to checking `[tool.uv]` configuration in `pyproject.toml`
+- Fix Python environment: from using system Python to using `uv run python`
+- Update CLI command: from `python3 -m dsl_compiler.cli` to `uv run dslc`
 
-### 4. 文档更新
-更新了以下文档文件中关于配置位置的说明：
+### 4. Documentation Update
+Updated the following document files regarding configuration location:
 - `README.md`
 - `DEVELOPMENT.md`
 - `MIGRATION_SUMMARY.md`
 - `MIRROR_CONFIG.md`
 
-## 修复结果
+## Fix Results
 
-✅ **配置冲突已解决**：不再有关于同时存在多个配置文件的警告  
-✅ **镜像源正常工作**：依赖下载速度明显提升  
-✅ **所有测试通过**：项目设置验证脚本 9/9 测试通过  
-✅ **CLI 正常工作**：`uv run dslc --help` 正常显示中文帮助  
-✅ **文档已更新**：所有相关文档已更新配置位置说明  
+✅ **Configuration Conflict Resolved**：No more warnings about simultaneous existence of multiple configuration files  
+✅ **Mirror Source Normal Operation**：Dependency download speed significantly improved  
+✅ **All Tests Passed**：Project setup verification script 9/9 tests passed  
+✅ **CLI Normal Operation**：`uv run dslc --help` displays Chinese help normally  
+✅ **Documentation Updated**：All relevant documentation updated configuration location instructions  
 
-## 最佳实践建议
+## Best Practices Suggestions
 
-1. **配置统一性**：对于 uv 项目，建议将所有配置集中在 `pyproject.toml` 的 `[tool.uv]` 部分，避免使用独立的 `uv.toml` 文件
-2. **环境一致性**：使用 `uv run` 命令确保运行在正确的虚拟环境中
-3. **测试覆盖**：包含配置验证的自动化测试可以及早发现配置问题
+1. **Configuration Uniformity**：For uv projects, it is recommended to concentrate all configurations in the `[tool.uv]` part of `pyproject.toml`, avoiding the use of independent `uv.toml` files
+2. **Environment Consistency**：Use `uv run` command to ensure correct virtual environment
+3. **Test Coverage**：Automated tests including configuration verification can identify configuration issues early
 
-## 时间记录
+## Time Record
 
-- **问题发现**：uv sync 失败，TOML 解析错误
-- **问题诊断**：识别配置格式和冲突问题
-- **解决实施**：配置合并、文件删除、测试修复
-- **文档更新**：更新所有相关文档
-- **验证完成**：所有测试通过，项目正常运行
+- **Issue Discovery**：uv sync failed, TOML parse error
+- **Issue Diagnosis**：Identify configuration format and conflict issues
+- **Solution Implementation**：Configuration merging, file deletion, test repair
+- **Documentation Update**：Update all relevant documentation
+- **Verification Completed**：All tests passed, project running normally
 
-修复完成时间：约 20 分钟 
+Fix completed time: about 20 minutes 

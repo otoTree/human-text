@@ -1,12 +1,12 @@
-# 项目迁移总结
+# Project Migration Summary
 
-## 概述
+## Overview
 
-本项目已成功迁移到使用 `uv` 进行环境管理，并将 `dsl_compiler` 作为单独的包在根目录进行管理。
+This project has been successfully migrated to use `uv` for environment management, with `dsl_compiler` managed as a standalone package in the root directory.
 
-## 主要变化
+## Major Changes
 
-### 1. 项目结构调整
+### 1. Project Structure Adjustments
 
 **之前的结构**：
 ```

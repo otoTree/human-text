@@ -1,6 +1,6 @@
-# 镜像源配置指南
+# Mirror Source Configuration Guide
 
-## 概述
+## Overview
 
 为了提高中国大陆用户的下载速度，本项目已预配置了多个国内镜像源。通过 `pyproject.toml` 文件中的 `[tool.uv]` 配置，用户可以享受更快的依赖下载体验。
 

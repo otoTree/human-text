@@ -1,58 +1,58 @@
-# 文档索引
+# Documentation Index
 
-本目录包含 Human-Text DSL Compiler 项目的所有详细文档。
+This directory contains all detailed documentation for the Human-Text DSL Compiler project.
 
-## 📚 文档列表
+## 📚 Documentation List
 
-### 🚀 开发相关文档
+### 🚀 Development Documentation
 
-- **[DEVELOPMENT.md](DEVELOPMENT.md)** - 项目开发指南
-  - 环境设置、开发工具链、代码规范
-  - 测试策略、构建流程、镜像源配置
+- **[DEVELOPMENT.md](DEVELOPMENT.md)** - Project Development Guide
+  - Environment setup, development toolchain, code standards
+  - Testing strategies, build processes, mirror source configuration
 
-- **[dsl_compiler_DEVELOPMENT.md](dsl_compiler_DEVELOPMENT.md)** - DSL 编译器开发文档
-  - 编译器内部架构和开发细节
+- **[dsl_compiler_DEVELOPMENT.md](dsl_compiler_DEVELOPMENT.md)** - DSL Compiler Development Documentation
+  - Compiler internal architecture and development details
 
-### 📦 包文档
+### 📦 Package Documentation
 
-- **[dsl_compiler_README.md](dsl_compiler_README.md)** - DSL 编译器包的详细说明
-  - 编译器功能、API 文档、使用示例
+- **[dsl_compiler_README.md](dsl_compiler_README.md)** - DSL Compiler Package Detailed Documentation
+  - Compiler features, API documentation, usage examples
 
-### 🔄 项目迁移和配置
+### 🔄 Project Migration and Configuration
 
-- **[MIGRATION_SUMMARY.md](MIGRATION_SUMMARY.md)** - 项目迁移总结
-  - 从传统工具链到 uv + pyproject.toml 的完整迁移记录
-  - 项目结构调整、依赖管理变化
+- **[MIGRATION_SUMMARY.md](MIGRATION_SUMMARY.md)** - Project Migration Summary
+  - Complete migration record from traditional toolchain to uv + pyproject.toml
+  - Project structure adjustments, dependency management changes
 
-- **[CONFIG_FIX_SUMMARY.md](CONFIG_FIX_SUMMARY.md)** - 配置修复总结
-  - 配置文件冲突解决过程
-  - 最佳实践建议
+- **[CONFIG_FIX_SUMMARY.md](CONFIG_FIX_SUMMARY.md)** - Configuration Fix Summary
+  - Configuration file conflict resolution process
+  - Best practice recommendations
 
-- **[MIRROR_CONFIG.md](MIRROR_CONFIG.md)** - 镜像源配置说明
-  - 国内镜像源配置详解
-  - 网络优化和性能调优
+- **[MIRROR_CONFIG.md](MIRROR_CONFIG.md)** - Mirror Source Configuration Guide
+  - Detailed explanation of domestic mirror source configuration
+  - Network optimization and performance tuning
 
-### 🔧 重构记录
+### 🔧 Refactoring Records
 
-- **[REFACTORING_SUMMARY.md](REFACTORING_SUMMARY.md)** - 代码重构总结
-  - 重构历史和架构改进记录
+- **[REFACTORING_SUMMARY.md](REFACTORING_SUMMARY.md)** - Code Refactoring Summary
+  - Refactoring history and architectural improvement records
 
-## 📖 如何使用这些文档
+## 📖 How to Use These Documents
 
-1. **新手入门**: 请先阅读项目根目录的 `README.md`，然后参考 `DEVELOPMENT.md`
-2. **深入开发**: 查看 `dsl_compiler_README.md` 和 `dsl_compiler_DEVELOPMENT.md`
-3. **了解变更**: 查看各种 SUMMARY 文档了解项目演进历史
-4. **配置问题**: 参考 `CONFIG_FIX_SUMMARY.md` 和 `MIRROR_CONFIG.md`
+1. **Getting Started**: Please read the `README.md` in the project root directory first, then refer to `DEVELOPMENT.md`
+2. **In-depth Development**: Check `dsl_compiler_README.md` and `dsl_compiler_DEVELOPMENT.md`
+3. **Understanding Changes**: Review various SUMMARY documents to understand project evolution history
+4. **Configuration Issues**: Refer to `CONFIG_FIX_SUMMARY.md` and `MIRROR_CONFIG.md`
 
-## 📁 文档组织原则
+## 📁 Documentation Organization Principles
 
-- **根目录**: 只保留主要的 `README.md` 作为项目入口
-- **doc 目录**: 包含所有详细文档和技术说明
-- **命名规范**: 来自子目录的文档使用前缀区分（如 `dsl_compiler_`）
+- **Root Directory**: Only keeps the main `README.md` as the project entry point
+- **doc Directory**: Contains all detailed documentation and technical specifications
+- **Naming Convention**: Documents from subdirectories use prefixes for distinction (e.g., `dsl_compiler_`)
 
-## 🔗 快速导航
+## 🔗 Quick Navigation
 
-- [返回项目根目录](../README.md)
-- [开发环境设置](DEVELOPMENT.md)
-- [项目迁移历史](MIGRATION_SUMMARY.md)
-- [编译器文档](dsl_compiler_README.md) 
+- [Back to Project Root](../README.md)
+- [Development Environment Setup](DEVELOPMENT.md)
+- [Project Migration History](MIGRATION_SUMMARY.md)
+- [Compiler Documentation](dsl_compiler_README.md) 
