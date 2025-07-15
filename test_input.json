@@ -1,0 +1,220 @@
+{
+  "version": "1.0",
+  "metadata": {
+    "directive_count": 17,
+    "directive_types": [
+      "var",
+      "task",
+      "tool",
+      "if",
+      "next",
+      "else",
+      "lang",
+      "agent"
+    ],
+    "source_file": "example/test_input.txt",
+    "compiled_at": "2025-07-15T10:05:24.365115"
+  },
+  "variables": [
+    {
+      "name": "order_id",
+      "value": "",
+      "type": "string",
+      "scope": "global"
+    },
+    {
+      "name": "payment_amount",
+      "value": "0",
+      "type": "string",
+      "scope": "global"
+    },
+    {
+      "name": "payment_threshold",
+      "value": "1000",
+      "type": "string",
+      "scope": "global"
+    }
+  ],
+  "tools": [],
+  "tasks": [
+    {
+      "id": "check_order",
+      "title": "Check order validity",
+      "body": [
+        {
+          "type": "text",
+          "content": "订单号：{{order_id}}",
+          "line_number": 6
+        },
+        {
+          "type": "conditional",
+          "line_number": 7,
+          "conditional": {
+            "type": "conditional",
+            "branches": [
+              {
+                "condition": "order_id == \"\"",
+                "actions": [
+                  {
+                    "type": "text",
+                    "content": "订单无效，终止流程"
+                  },
+                  {
+                    "type": "jump",
+                    "jump": {
+                      "target": "log_result"
+                    }
+                  }
+                ]
+              },
+              {
+                "actions": [
+                  {
+                    "type": "jump",
+                    "jump": {
+                      "target": "verify_payment"
+                    }
+                  }
+                ]
+              }
+            ],
+            "line_number": 7
+          }
+        }
+      ],
+      "next": [],
+      "metadata": {},
+      "dependencies": []
+    },
+    {
+      "id": "verify_payment",
+      "title": "Verify payment amount",
+      "body": [
+        {
+          "type": "tool_call",
+          "line_number": 14,
+          "tool_call": {
+            "name": "payment_system_check",
+            "description": "检查支付金额是否超过阈值"
+          }
+        },
+        {
+          "type": "conditional",
+          "line_number": 15,
+          "conditional": {
+            "type": "conditional",
+            "branches": [
+              {
+                "condition": "payment_amount > payment_threshold",
+                "actions": [
+                  {
+                    "type": "text",
+                    "content": "Payment is acceptable"
+                  },
+                  {
+                    "type": "jump",
+                    "jump": {
+                      "target": "thank_customer"
+                    }
+                  }
+                ]
+              },
+              {
+                "actions": [
+                  {
+                    "type": "text",
+                    "content": "Payment rejected"
+                  },
+                  {
+                    "type": "jump",
+                    "jump": {
+                      "target": "log_result"
+                    }
+                  }
+                ]
+              }
+            ],
+            "line_number": 15
+          }
+        }
+      ],
+      "next": [],
+      "metadata": {},
+      "dependencies": []
+    },
+    {
+      "id": "thank_customer",
+      "title": "Thank customer",
+      "body": [
+        {
+          "type": "text",
+          "content": "感谢您的购买！",
+          "line_number": 23
+        },
+        {
+          "type": "next_action",
+          "line_number": 24,
+          "next_action": {
+            "target": "log_result"
+          }
+        }
+      ],
+      "next": [
+        "log_result"
+      ],
+      "metadata": {},
+      "dependencies": []
+    },
+    {
+      "id": "log_result",
+      "title": "Log process result",
+      "body": [
+        {
+          "type": "tool_call",
+          "line_number": 28,
+          "tool_call": {
+            "name": "system_logger",
+            "description": "记录订单处理结果"
+          }
+        },
+        {
+          "type": "text",
+          "content": "流程结束，写入日志",
+          "line_number": 27
+        },
+        {
+          "type": "next_action",
+          "line_number": 29,
+          "next_action": {
+            "target": "END"
+          }
+        }
+      ],
+      "next": [
+        "END"
+      ],
+      "metadata": {},
+      "dependencies": []
+    },
+    {
+      "id": "END",
+      "title": "Process complete",
+      "body": [
+        {
+          "type": "text",
+          "content": "订单处理流程结束",
+          "line_number": 32
+        }
+      ],
+      "next": [],
+      "metadata": {},
+      "dependencies": []
+    }
+  ],
+  "entry_point": "check_order",
+  "compiled_at": "2025-07-15T10:05:24.365129",
+  "compiler_version": "1.0.0",
+  "source_files": [
+    "example/test_input.txt"
+  ]
+}

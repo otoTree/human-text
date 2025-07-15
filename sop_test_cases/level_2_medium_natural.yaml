@@ -1,7 +1,7 @@
 metadata:
   directive_count: 0
   source_file: sop_test_cases/level_2_medium_natural.txt
-  compiled_at: '2025-07-14T16:39:32.258828'
+  compiled_at: '2025-07-15T10:08:09.148013'
 variables:
 - name: complaint_severity
   value: ''
@@ -11,32 +11,27 @@ variables:
   value: ''
   type: string
   scope: global
-- name: satisfaction_score
-  value: '0'
-  type: string
-  scope: global
 tasks:
 - id: receive_complaint
-  title: Receive and evaluate complaint
+  title: 接收与评估投诉
   body:
   - type: tool_call
-    line_number: 7
+    line_number: 6
     tool_call:
       name: crm_system_create
-      description: Create complaint ticket
+      description: 创建投诉工单
   - type: text
-    content: Create new complaint ticket in CRM system
-    line_number: 6
+    content: 使用CRM系统创建新的投诉工单
+    line_number: 5
   - type: text
-    content: 'Record customer info, contact details and complaint content     Set
-      initial severity level: {{complaint_severity}}     Analyze complaint severity     Query
-      customer type: {{customer_type}}'
-    line_number: 8
+    content: 记录客户信息、联系方式和投诉内容     初步设置投诉严重等级：{{complaint_severity}}     
+      查询客户类型：{{customer_type}}
+    line_number: 7
   - type: conditional
-    line_number: 12
+    line_number: 10
     conditional:
       branches:
-      - condition: complaint_severity == "high" OR customer_type == "VIP"
+      - condition: complaint_severity == "高" OR customer_type == "VIP客户"
         actions:
         - type: jump
           jump:
@@ -45,56 +40,52 @@ tasks:
         - type: jump
           jump:
             target: regular_processing
-      line_number: 12
+      line_number: 10
 - id: regular_processing
-  title: Regular processing
+  title: 常规处理
   body:
   - type: text
-    content: Assign ticket to regular support team     Contact customer for 
-      details     Conduct internal investigation     Develop solution and 
-      implement
-    line_number: 18
+    content: 分配给常规处理团队     主动联系客户了解问题细节     展开内部调查并制定解决方案     实施解决方案
+    line_number: 16
   - type: next_action
-    line_number: 22
+    line_number: 20
     next_action:
       target: customer_confirmation
   next:
   - customer_confirmation
 - id: escalate_complaint
-  title: Escalate complaint
+  title: 升级处理
   body:
   - type: tool_call
-    line_number: 26
-    tool_call:
-      name: notification_service_alert
-      description: Notify relevant departments
-  - type: text
-    content: Assign ticket to senior support team
     line_number: 25
+    tool_call:
+      name: notification_service
+      description: 发送紧急通知
   - type: text
-    content: Create emergency action plan     Maintain real-time communication 
-      with customer     Implement solution
-    line_number: 27
+    content: 分配给高级支持团队或客服主管     通知相关其他部门
+    line_number: 23
+  - type: text
+    content: 制定紧急处理计划并调动资源     保持与客户的实时沟通     问题解决后
+    line_number: 26
   - type: next_action
-    line_number: 30
+    line_number: 29
     next_action:
       target: customer_confirmation
   next:
   - customer_confirmation
 - id: customer_confirmation
-  title: Customer communication and confirmation
+  title: 客户沟通与确认
   body:
   - type: tool_call
-    line_number: 35
+    line_number: 34
     tool_call:
       name: satisfaction_survey
-      description: Collect feedback
+      description: 满意度调查工具
   - type: text
-    content: 'Contact customer to explain solution     Collect satisfaction score:
-      {{satisfaction_score}}'
-    line_number: 33
+    content: 联系客户说明处理过程和结果     收集客户满意度评分
+    line_number: 32
   - type: conditional
-    line_number: 36
+    line_number: 35
     conditional:
       branches:
       - condition: satisfaction_score >= 4
@@ -106,49 +97,46 @@ tasks:
         - type: jump
           jump:
             target: reprocess_complaint
-      line_number: 36
+      line_number: 35
 - id: reprocess_complaint
-  title: Re-process complaint
+  title: 重新处理
   body:
   - type: text
-    content: Reactivate ticket status     Assign to higher-level technician     
-      Re-evaluate problem     Develop additional compensation if needed     
-      Implement new solution
-    line_number: 42
+    content: 重新激活工单状态     指派给更高级别技术人员或主管     重新评估问题并提供补偿方案     实施新解决方案
+    line_number: 41
   - type: next_action
-    line_number: 47
+    line_number: 45
     next_action:
       target: customer_confirmation
   next:
   - customer_confirmation
 - id: close_case
-  title: Close and archive case
+  title: 结案归档
   body:
   - type: tool_call
-    line_number: 51
+    line_number: 49
     tool_call:
       name: crm_system_update
-      description: Update ticket status
+      description: 更新工单状态
   - type: text
-    content: Update ticket status to "Resolved" in CRM
+    content: 在CRM系统中更新工单状态为"已解决"
+    line_number: 48
+  - type: text
+    content: 撰写详细结案报告并归档
     line_number: 50
-  - type: text
-    content: Write detailed closure report     Archive all records and 
-      communications
-    line_number: 52
   - type: next_action
-    line_number: 54
+    line_number: 51
     next_action:
       target: END
   next:
   - END
 - id: END
-  title: Process complete
+  title: 流程结束
   body:
   - type: text
-    content: Complaint handling process completed
-    line_number: 57
+    content: 客户投诉处理流程完成
+    line_number: 54
 entry_point: receive_complaint
-compiled_at: 2025-07-14 16:39:32.258851
+compiled_at: 2025-07-15 10:08:09.148028
 source_files:
 - sop_test_cases/level_2_medium_natural.txt

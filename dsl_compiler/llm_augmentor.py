@@ -62,11 +62,28 @@ class LLMAugmentor:
     
     async def _convert_to_dsl(self, natural_content: str) -> str:
         """Convert natural language to DSL code"""
+        # 检测源文件语言
+        detected_language = self._detect_language(natural_content)
+        
+        # 根据检测的语言构建提示词
+        if detected_language == "chinese":
+            language_instruction = "请使用中文描述任务内容和工具描述，但DSL语法关键字必须使用英文"
+            example_task_content = "接收用户在密码重置页面输入的邮箱地址"
+            example_tool_desc = "检查此用户是否存在"
+            example_comment = "用户不存在，终止流程"
+        else:
+            language_instruction = "Please use English to describe task content and tool descriptions, with English DSL syntax keywords"
+            example_task_content = "Receive user email address entered on password reset page"
+            example_tool_desc = "Check if this user exists"
+            example_comment = "User does not exist, terminate process"
+        
         prompt = f"""
 You are a professional DSL code generator. Please convert the following natural language description directly to DSL code format.
 
 Natural language description:
 {natural_content}
+
+Language instruction: {language_instruction}
 
 Please strictly output in the following DSL syntax format, do not add any explanatory text:
 
@@ -84,14 +101,14 @@ Example format:
 @var user_email = ""
 
 @task verify_user Verify user identity
-    Receive user email address entered on password reset page
+    {example_task_content}
     User email: {{{{user_email}}}}
-    @tool user_database_query Check if this user exists
+    @tool user_database_query {example_tool_desc}
     @if user_exists == true
         Generate secure one-time reset token
         @next send_reset_link
     @else
-        User does not exist, terminate process
+        {example_comment}
         @next END
 
 @task send_reset_link Send reset link
@@ -120,6 +137,7 @@ Requirements:
 - Extract required tools and variables
 - Tool names should avoid duplication, use descriptive suffixes
 - Maintain original semantics and logical flow
+- Use the detected language ({detected_language}) for task descriptions while keeping DSL syntax keywords in English
 - Only output DSL code, no other text
 
 Please start conversion:
@@ -347,6 +365,35 @@ Please start conversion:
             return True
         
         return False
+    
+    def _detect_language(self, content: str) -> str:
+        """检测文本内容的语言"""
+        import re
+        
+        # 检测中文字符
+        chinese_char_pattern = re.compile(r'[\u4e00-\u9fff]')
+        chinese_matches = chinese_char_pattern.findall(content)
+        
+        # 检测英文单词
+        english_word_pattern = re.compile(r'[a-zA-Z]+')
+        english_matches = english_word_pattern.findall(content)
+        
+        # 统计字符数量
+        chinese_count = len(chinese_matches)
+        english_count = len(''.join(english_matches))
+        
+        # 如果中文字符数量超过总字符数的30%，认为是中文
+        total_chars = len(content)
+        if chinese_count > 0 and (chinese_count / total_chars) > 0.1:
+            return "chinese"
+        
+        # 检测常见的中文词汇
+        chinese_keywords = ["流程", "步骤", "任务", "工具", "系统", "用户", "客户", "处理", "评估", "分析"]
+        for keyword in chinese_keywords:
+            if keyword in content:
+                return "chinese"
+        
+        return "english"
     
     def _is_structured_content(self, content: str) -> bool:
         """Check if content is already structured"""
